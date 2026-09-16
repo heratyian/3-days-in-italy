@@ -56,23 +56,14 @@ This separation allows the model to handle subjective planning while software ha
 The system should:
 
 1. Accept natural-language trip requests.
-
 2. Infer relevant traveler preferences and constraints.
-
 3. Recommend only places contained in `italy.json`.
-
 4. Produce a structured three-day itinerary.
-
 5. Consider geography, opening hours, visit duration, price, rating, tags, and user preferences when relevant.
-
 6. Validate the itinerary before presenting it.
-
 7. Allow conversational refinement without discarding unrelated prior preferences.
-
 8. Communicate uncertainty when the source dataset is incomplete or inconsistent.
-
 9. Expose structured itinerary state suitable for rendering by an external frontend.
-
 10. Be inspectable and debuggable through LangSmith.
 
 ---
