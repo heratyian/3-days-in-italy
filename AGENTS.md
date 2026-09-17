@@ -127,6 +127,28 @@ Before adding a dependency, consider whether the functionality is simple enough 
 
 Do not introduce infrastructure or libraries merely because they are common in larger systems.
 
+## Use Dependencies Fully Before Writing Custom Code
+
+Before implementing parsing, validation, normalization, or field mapping,
+check whether an existing dependency provides a conventional solution.
+
+For Pydantic models, prefer field aliases, field validators, and TypeAdapter
+over a separate normalization layer or manual loading and validation loops.
+
+Consider a focused package when it replaces meaningful custom logic.
+Evaluate the total complexity, including integration—not just lines saved.
+
+## Keep Domain Code Explicit
+
+Prefer straightforward filters and conditionals over generic filter maps,
+dynamic field access, or query frameworks for small in-memory datasets.
+
+Keep normalization rules on the model when they define valid domain data.
+
+Support formats demonstrated by the source data or current requirements.
+Avoid speculative unions, extra fields, or retained raw records without
+a concrete consumer. Preserve the original dataset for reference.
+
 ## Types and Data
 
 Use type hints for public interfaces and anywhere they improve understanding.
@@ -148,6 +170,15 @@ Do not add defensive code for impossible states unless there is evidence those s
 Error messages should explain what failed and include enough context to diagnose the problem.
 
 ## Comments and Documentation
+
+Keep README.md focused on onboarding: what the project does, prerequisites,
+how to run it, and a minimal usage example.
+
+Document model semantics, API behavior, constraints, and edge cases in
+docstrings beside the relevant code. Use comments for non-obvious reasoning.
+
+Avoid duplicating documentation between the README and code. Link to the
+relevant source or specification when more detail is needed.
 
 Prefer self-explanatory code over comments.
 

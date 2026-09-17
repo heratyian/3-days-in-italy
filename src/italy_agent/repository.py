@@ -1,4 +1,8 @@
-"""In-memory access to the authoritative place dataset."""
+"""In-memory access to the authoritative place dataset.
+
+The original assignment data is preserved in data/italy.json, sourced from
+https://storage.googleapis.com/interview-booking/italy.json.
+"""
 
 import re
 from pathlib import Path
@@ -13,7 +17,13 @@ PRICE_LEVELS = {"€": 1, "€€": 2, "€€€": 3, "€€€€": 4}
 
 
 class PlaceRepository:
-    """Load a JSON array once and expose normalized records by ID or search."""
+    """Load a JSON array once and expose normalized records by ID or search.
+
+    The default path points to data/italy.json in the source checkout. Outside
+    the checkout, supply an explicit path: PlaceRepository("/path/to/italy.json").
+    Pydantic reports invalid records; duplicate IDs raise ValueError.
+    Returned places are deep copies, so callers cannot change repository data.
+    """
 
     def __init__(self, path: str | Path = DEFAULT_DATA_PATH) -> None:
         path = Path(path)
@@ -45,10 +55,18 @@ class PlaceRepository:
     ) -> list[Place]:
         """AND filters together; OR values within each filter, including tags.
 
-        Labels ignore case, whitespace, hyphens and underscores. Query terms
-        match any searchable text; more matching terms rank first, then rating
-        descending and ID ascending. Unknown price/rating fails that filter.
-        Empty filters and a blank query impose no restriction.
+        Labels ignore case and differences between spaces, hyphens and
+        underscores. Empty filters and a blank query impose no restriction.
+
+        Query words match whole words in name, description, type, city, region,
+        neighborhood and tags. At least one word must match. Results sort by
+        matching word count, then rating descending (unknown last), then ID.
+        Without a query, results sort by rating and ID.
+
+        Prices are ordered € through €€€€. Unknown prices/ratings are excluded
+        when their corresponding filter is requested. Limits apply after
+        ranking; zero returns no results. Invalid limits, price levels or rating
+        thresholds raise ValueError.
         """
         if limit < 0:
             raise ValueError("limit must be nonnegative")

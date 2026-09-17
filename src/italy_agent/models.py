@@ -12,6 +12,15 @@ def normalize_label(value: str) -> str:
 
 
 class Place(BaseModel):
+    """A dataset place with its source ID and no inferred travel information.
+
+    Optional values remain None; missing/null tags become an empty list.
+    Text is stripped and repaired with ftfy, and tags are deduplicated into
+    lowercase hyphenated labels (e.g. local_favorite becomes local-favorite).
+    Source hours and duration_minutes are accepted as aliases for opening_hours
+    and typical_duration_minutes. Hours remain uninterpreted text.
+    """
+
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
     type: str | None = None
