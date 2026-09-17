@@ -57,7 +57,8 @@ def test_save_creates_ordered_itinerary_and_replaces_only_requested_day(itinerar
     assert itinerary.days[1].stops
     message = result.update["messages"][0]
     assert message.tool_call_id == "save"
-    assert json.loads(message.content) == updated.model_dump()
+    assert json.loads(message.content)["itinerary"] == updated.model_dump()
+    assert result.update["validation"].valid
 
 
 @pytest.mark.parametrize("days", [

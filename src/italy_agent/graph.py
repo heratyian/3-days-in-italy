@@ -9,19 +9,21 @@ from italy_agent.state import AgentState, initialize_plan
 from italy_agent.tools import (
     calculate_distance,
     find_nearby_places,
-    get_place, 
+    get_place,
     save_itinerary,
     search_places,
     update_preferences,
+    validate_itinerary,
 )
 
-tools= [
+tools = [
     calculate_distance,
     find_nearby_places,
     get_place,
     save_itinerary,
     search_places,
     update_preferences,
+    validate_itinerary,
 ]
 
 graph = create_agent(

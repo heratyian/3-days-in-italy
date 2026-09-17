@@ -48,6 +48,7 @@ def test_agent_search_lookup_and_followup(monkeypatch):
         assert {tool["function"]["name"] for tool in kwargs["tools"]} == {
             "search_places", "get_place", "update_preferences", "save_itinerary",
             "find_nearby_places", "calculate_distance",
+            "validate_itinerary",
         }
         latest = messages[-1]
         if isinstance(latest, HumanMessage):

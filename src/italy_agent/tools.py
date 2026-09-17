@@ -1,5 +1,6 @@
 """Small, JSON-serializable tools backed by the authoritative repository."""
 
+import json
 from typing import Annotated, Literal
 
 from langchain.tools import ToolRuntime
@@ -11,6 +12,7 @@ from pydantic import Field, ValidationError
 from italy_agent.geography import calculate_distance_between_places
 from italy_agent.models import DistanceResult, Itinerary, ItineraryDay, TravelerPreferences
 from italy_agent.repository import PlaceRepository
+from italy_agent.validation import validate_itinerary as check_itinerary
 
 
 repository = PlaceRepository()
@@ -111,6 +113,19 @@ find_nearby_places.handle_tool_error = True
 
 
 @tool
+def validate_itinerary(itinerary: Itinerary) -> dict:
+    """Check a proposed three-day plan without changing saved state.
+
+    Returns valid and issues with severity, code, message, day, and place_id.
+    Correct errors before saving; explain warnings and source uncertainty to
+    the traveler. Missing dates prevent weekday/seasonal availability checks.
+    This does not verify real routes or live availability. save_itinerary also
+    runs these checks automatically and stores validation for the saved plan.
+    """
+    return check_itinerary(itinerary, repository).model_dump()
+
+
+@tool
 def update_preferences(preferences: TravelerPreferences, runtime: ToolRuntime) -> Command:
     """Update persistent traveler preferences, preserving omitted fields.
 
@@ -139,8 +154,9 @@ def save_itinerary(days: list[ItineraryDay], runtime: ToolRuntime) -> Command:
     days; each supplied day replaces that whole day, including all its stops.
     Omitted days are preserved. Use dataset place IDs, short reasons, and
     relevant uncertainty warnings. Unknown times should be null, otherwise
-    use local HH:MM. Empty days can represent free time. This checks structure
-    and place IDs, not scheduling or feasibility. On error, correct and retry.
+    use local HH:MM. Empty days can represent free time. Validation runs on the
+    complete merged plan. Errors leave saved state unchanged; correct them and
+    retry. Warnings allow saving but must be explained to the traveler.
     Call once per model turn with all changed days to avoid conflicting writes.
     """
     if not days or len({day.day for day in days}) != len(days):
@@ -153,15 +169,19 @@ def save_itinerary(days: list[ItineraryDay], runtime: ToolRuntime) -> Command:
     saved_days.update({day.day: day for day in days})
     try:
         itinerary = Itinerary(days=[saved_days[number] for number in sorted(saved_days)])
-        for day in itinerary.days:
-            for stop in day.stops:
-                repository.get(stop.place_id)
-    except (ValidationError, KeyError) as error:
+    except ValidationError as error:
         raise ToolException(f"Itinerary was not saved: {error}") from error
+    validation = check_itinerary(itinerary, repository)
+    if not validation.valid:
+        raise ToolException(f"Itinerary was not saved. Correct errors and retry: {validation.model_dump_json()}")
     return Command(update={
         "itinerary": itinerary,
+        "validation": validation,
         "messages": [ToolMessage(
-            content=itinerary.model_dump_json(), tool_call_id=runtime.tool_call_id,
+            content=json.dumps({
+                "itinerary": itinerary.model_dump(), "validation": validation.model_dump(),
+            }),
+            tool_call_id=runtime.tool_call_id,
         )],
     })
 

@@ -30,6 +30,10 @@ Open the Studio URL printed by the server, select `italy_agent`, and send:
 Inspect the search/lookup tool calls and returned place IDs in the trace.
 The state also exposes `preferences` and `itinerary` as structured data for a
 frontend; `itinerary` stays null until a complete three-day plan is saved.
+Each save runs dataset validation and exposes its result as `validation`.
+Errors prevent saving; warnings flag uncertain hours, short visits, or long
+geographic transitions. Calendar-dependent hours and real travel times remain
+unverified. Check details in [validation.py](src/italy_agent/validation.py).
 Try “Make day two quieter” in the same thread and inspect the updated itinerary.
 Continue in the same thread to retain conversation history. Agent Server
 manages thread persistence locally; this is a development setup.

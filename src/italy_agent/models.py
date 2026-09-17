@@ -96,8 +96,8 @@ class TravelerPreferences(BaseModel):
 class ItineraryStop(BaseModel):
     """A proposed visit. Times are local HH:MM text, or None if unscheduled.
 
-    Scheduling, duplicates, and opening-hour checks belong to Phase 5.
-    Place membership is checked against the repository when saving a plan.
+    Visits must end later on the same day; 24:00 is allowed as an end time.
+    The validator checks scheduling and dataset constraints before saving.
     """
 
     place_id: str = Field(min_length=1)
@@ -124,3 +124,18 @@ class Itinerary(BaseModel):
         if [day.day for day in self.days] != [1, 2, 3]:
             raise ValueError("Itinerary must contain days 1, 2, and 3 in order")
         return self
+
+
+class ValidationIssue(BaseModel):
+    severity: Literal["error", "warning"]
+    code: str
+    message: str
+    day: int | None = None
+    place_id: str | None = None
+
+
+class ValidationResult(BaseModel):
+    """Valid means no errors; warnings still require the traveler's attention."""
+
+    valid: bool
+    issues: list[ValidationIssue] = Field(default_factory=list)
