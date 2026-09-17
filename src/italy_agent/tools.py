@@ -2,9 +2,13 @@
 
 from typing import Annotated, Literal
 
+from langchain.tools import ToolRuntime
+from langchain_core.messages import ToolMessage
 from langchain_core.tools import ToolException, tool
-from pydantic import Field
+from langgraph.types import Command
+from pydantic import Field, ValidationError
 
+from italy_agent.models import Itinerary, ItineraryDay, TravelerPreferences
 from italy_agent.repository import PlaceRepository
 
 
@@ -51,3 +55,62 @@ def get_place(place_id: str) -> dict:
 
 
 get_place.handle_tool_error = True
+
+
+@tool
+def update_preferences(preferences: TravelerPreferences, runtime: ToolRuntime) -> Command:
+    """Update persistent traveler preferences, preserving omitted fields.
+
+    Supply only changed fields. A supplied list replaces that entire list:
+    include retained items when adding interests. Use [] or null to clear a
+    list or nullable field. Do not store day/stop-only requests as global
+    preferences. Call once per model turn to avoid conflicting state writes.
+    """
+    current = TravelerPreferences.model_validate(runtime.state.get("preferences", {}))
+    updated = TravelerPreferences.model_validate({
+        **current.model_dump(), **preferences.model_dump(exclude_unset=True),
+    })
+    return Command(update={
+        "preferences": updated,
+        "messages": [ToolMessage(
+            content=updated.model_dump_json(), tool_call_id=runtime.tool_call_id,
+        )],
+    })
+
+
+@tool
+def save_itinerary(days: list[ItineraryDay], runtime: ToolRuntime) -> Command:
+    """Create or update the structured three-day itinerary before presenting it.
+
+    For a new plan supply days 1, 2, and 3. For a revision supply only affected
+    days; each supplied day replaces that whole day, including all its stops.
+    Omitted days are preserved. Use dataset place IDs, short reasons, and
+    relevant uncertainty warnings. Unknown times should be null, otherwise
+    use local HH:MM. Empty days can represent free time. This checks structure
+    and place IDs, not scheduling or feasibility. On error, correct and retry.
+    Call once per model turn with all changed days to avoid conflicting writes.
+    """
+    if not days or len({day.day for day in days}) != len(days):
+        raise ToolException("Supply at least one day, with no repeated day numbers")
+    current = runtime.state.get("itinerary")
+    saved_days = (
+        {day.day: day for day in Itinerary.model_validate(current).days}
+        if current is not None else {}
+    )
+    saved_days.update({day.day: day for day in days})
+    try:
+        itinerary = Itinerary(days=[saved_days[number] for number in sorted(saved_days)])
+        for day in itinerary.days:
+            for stop in day.stops:
+                repository.get(stop.place_id)
+    except (ValidationError, KeyError) as error:
+        raise ToolException(f"Itinerary was not saved: {error}") from error
+    return Command(update={
+        "itinerary": itinerary,
+        "messages": [ToolMessage(
+            content=itinerary.model_dump_json(), tool_call_id=runtime.tool_call_id,
+        )],
+    })
+
+
+save_itinerary.handle_tool_error = True

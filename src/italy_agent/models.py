@@ -1,10 +1,10 @@
 """Normalized place data, without inferring missing travel information."""
 
 import re
-from typing import Any
+from typing import Any, Literal, Self
 
 from ftfy import fix_text
-from pydantic import AliasChoices, BaseModel, Field, field_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 
 def normalize_label(value: str) -> str:
@@ -58,3 +58,53 @@ class Place(BaseModel):
     @classmethod
     def normalize_tags(cls, tags: list[str]) -> list[str]:
         return list(dict.fromkeys(normalize_label(tag) for tag in tags if tag.strip()))
+
+
+class TravelerPreferences(BaseModel):
+    """Persistent trip preferences; day/stop-specific requests stay on the plan.
+
+    Unstated preferences remain empty or None. For partial updates, only
+    explicitly supplied fields replace existing values; lists replace in full.
+    """
+
+    interests: list[str] = Field(default_factory=list)
+    avoid: list[str] = Field(default_factory=list)
+    preferred_cities: list[str] = Field(default_factory=list)
+    preferred_regions: list[str] = Field(default_factory=list)
+    budget: str | None = None
+    pace: Literal["relaxed", "moderate", "packed"] | None = None
+    food_preferences: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class ItineraryStop(BaseModel):
+    """A proposed visit. Times are local HH:MM text, or None if unscheduled.
+
+    Scheduling, duplicates, and opening-hour checks belong to Phase 5.
+    Place membership is checked against the repository when saving a plan.
+    """
+
+    place_id: str = Field(min_length=1)
+    start_time: str | None = None
+    end_time: str | None = None
+    reason: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ItineraryDay(BaseModel):
+    day: int = Field(ge=1, le=3)
+    title: str | None = None
+    city_or_region: str | None = None
+    stops: list[ItineraryStop]
+
+
+class Itinerary(BaseModel):
+    """A complete three-day plan ordered by day number; empty days are allowed."""
+
+    days: list[ItineraryDay] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def check_day_numbers(self) -> Self:
+        if [day.day for day in self.days] != [1, 2, 3]:
+            raise ValueError("Itinerary must contain days 1, 2, and 3 in order")
+        return self

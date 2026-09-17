@@ -45,7 +45,9 @@ def test_agent_search_lookup_and_followup(monkeypatch):
 
     def generate(self, messages, **kwargs):
         requests.append(messages)
-        assert {tool["function"]["name"] for tool in kwargs["tools"]} == {"search_places", "get_place"}
+        assert {tool["function"]["name"] for tool in kwargs["tools"]} == {
+            "search_places", "get_place", "update_preferences", "save_itinerary",
+        }
         latest = messages[-1]
         if isinstance(latest, HumanMessage):
             if latest.content == "Make day two quieter.":
