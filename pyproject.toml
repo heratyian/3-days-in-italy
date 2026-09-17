@@ -7,10 +7,20 @@ authors = [
     { name = "Ian Heraty", email = "heratyian@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2,<3", "ftfy>=6,<7"]
+dependencies = [
+    "pydantic>=2,<3",
+    "ftfy>=6,<7",
+    "langchain>=1,<2",
+    "langgraph>=1,<2",
+    "langchain-openai>=1,<2",
+    "langsmith>=0.4,<1",
+]
 
 [dependency-groups]
-dev = ["pytest>=8,<10"]
+dev = [
+    "langgraph-cli[inmem]>=0.4,<1",
+    "pytest>=8,<10",
+]
 
 [tool.uv.build-backend]
 module-name = "italy_agent"

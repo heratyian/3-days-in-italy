@@ -1,16 +1,41 @@
 # 3 Days in Italy
 
-A dataset-grounded trip planner. Phase 1 implements the Python data layer;
-the agent, geography tools, and itinerary validation are later phases in [SPEC.md](SPEC.md).
+A dataset-grounded three-day Italy trip planner.
 
 ## Local setup
 
-Requires Python 3.12+ and uv (the checkout pins Python 3.13). No API keys needed.
+Requires Python 3.12+ and uv (the checkout pins Python 3.13).
 
 ```sh
 uv sync
 uv run pytest
 ```
+
+## Run the agent in Studio
+
+Copy `.env.example` to `.env` and fill in your OpenAI and LangSmith API keys.
+The default model is GPT-5 mini; `ITALY_AGENT_MODEL` can select another
+OpenAI model using the `openai:model-name` format.
+
+```sh
+cp .env.example .env
+# Fill in .env, then start the local Agent Server:
+uv run langgraph dev
+```
+
+Open the Studio URL printed by the server, select `italy_agent`, and send:
+
+> Plan a relaxed three-day food and wine trip.
+
+Inspect the search/lookup tool calls and returned place IDs in the trace.
+Continue in the same thread to retain conversation history. Agent Server
+manages thread persistence locally; this is a development setup.
+See the [LangGraph local-server guide](https://docs.langchain.com/oss/python/langgraph/local-server).
+
+Tests and repository searches run without API keys. Tests use a scripted model;
+a live Studio run is needed to evaluate actual planning quality.
+
+## Place Repository
 
 Try a search from the checkout:
 
