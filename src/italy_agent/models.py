@@ -60,6 +60,22 @@ class Place(BaseModel):
         return list(dict.fromkeys(normalize_label(tag) for tag in tags if tag.strip()))
 
 
+class DistanceResult(BaseModel):
+    """Straight-line geographic estimate, never a route length or travel time."""
+
+    origin_place_id: str
+    destination_place_id: str
+    distance_km: float = Field(ge=0)
+    method: Literal["haversine"] = "haversine"
+
+
+class NearbyPlace(BaseModel):
+    """An authoritative candidate and its Haversine distance from the origin."""
+
+    place: Place
+    distance_km: float = Field(ge=0)
+
+
 class TravelerPreferences(BaseModel):
     """Persistent trip preferences; day/stop-specific requests stay on the plan.
 

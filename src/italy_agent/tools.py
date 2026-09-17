@@ -8,7 +8,8 @@ from langchain_core.tools import ToolException, tool
 from langgraph.types import Command
 from pydantic import Field, ValidationError
 
-from italy_agent.models import Itinerary, ItineraryDay, TravelerPreferences
+from italy_agent.geography import calculate_distance_between_places
+from italy_agent.models import DistanceResult, Itinerary, ItineraryDay, TravelerPreferences
 from italy_agent.repository import PlaceRepository
 
 
@@ -55,6 +56,58 @@ def get_place(place_id: str) -> dict:
 
 
 get_place.handle_tool_error = True
+
+
+@tool
+def calculate_distance(origin_place_id: str, destination_place_id: str) -> dict:
+    """Estimate straight-line distance in km between two exact dataset place IDs.
+
+    Uses Haversine distance from supplied coordinates, not driving/walking
+    routes or travel time. Unknown IDs or missing coordinates return an error;
+    do not infer a distance when coordinates are unavailable.
+    """
+    try:
+        distance_km = calculate_distance_between_places(
+            repository.get(origin_place_id), repository.get(destination_place_id),
+        )
+    except (KeyError, ValueError) as error:
+        raise ToolException(error.args[0]) from error
+    return DistanceResult(
+        origin_place_id=origin_place_id, destination_place_id=destination_place_id,
+        distance_km=distance_km,
+    ).model_dump()
+
+
+calculate_distance.handle_tool_error = True
+
+
+@tool
+def find_nearby_places(
+    place_id: str,
+    radius_km: Annotated[float, Field(ge=0, allow_inf_nan=False)] | None = None,
+    tags: list[str] | None = None,
+    types: list[str] | None = None,
+    limit: Annotated[int, Field(ge=1)] = 10,
+) -> list[dict]:
+    """Find dataset alternatives ranked by straight-line Haversine distance in km.
+
+    Returns place records and distance_km, not route lengths or travel times.
+    The origin is excluded. Missing-coordinate candidates are omitted; an
+    unknown or missing-coordinate origin is an error. None radius means no
+    distance cap, so inspect distances before calling results nearby. Zero
+    radius includes only co-located candidates. Radius boundaries are inclusive.
+    Tags/types use search_places filtering semantics. Use for nearby replacements
+    and grouping a day's stops, while respecting traveler preferences.
+    """
+    try:
+        return [candidate.model_dump() for candidate in repository.nearby(
+            place_id, radius_km, tags=tags, types=types, limit=limit,
+        )]
+    except (KeyError, ValueError) as error:
+        raise ToolException(error.args[0]) from error
+
+
+find_nearby_places.handle_tool_error = True
 
 
 @tool

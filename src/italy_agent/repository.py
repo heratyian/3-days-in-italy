@@ -5,11 +5,13 @@ https://storage.googleapis.com/interview-booking/italy.json.
 """
 
 import re
+from math import isfinite
 from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from italy_agent.models import Place, normalize_label
+from italy_agent.geography import calculate_distance_between_places
+from italy_agent.models import NearbyPlace, Place, normalize_label
 
 
 DEFAULT_DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "italy.json"
@@ -126,3 +128,38 @@ class PlaceRepository:
             -match[0], -(match[1].rating if match[1].rating is not None else -1), match[1].id,
         ))
         return [place.model_copy(deep=True) for _, place in matches[:limit]]
+
+    def nearby(
+        self,
+        place_id: str,
+        radius_km: float | None = None,
+        *,
+        tags: list[str] | None = None,
+        types: list[str] | None = None,
+        limit: int = 10,
+    ) -> list[NearbyPlace]:
+        """Return candidates sorted by Haversine distance, then ID for ties.
+
+        Excludes the origin and candidates missing either coordinate. An
+        unknown origin raises KeyError; missing origin coordinates raise
+        ValueError. None means no radius cap; zero includes only co-located
+        candidates. Radius boundaries are inclusive. Filters follow search
+        semantics and limits apply after distance sorting. Results are copies.
+        """
+        if radius_km is not None and (not isfinite(radius_km) or radius_km < 0):
+            raise ValueError("radius_km must be finite and nonnegative")
+        if limit < 0:
+            raise ValueError("limit must be nonnegative")
+        origin = self.get(place_id)
+        if origin.latitude is None or origin.longitude is None:
+            raise ValueError(f"Missing coordinates for place ID: {place_id}")
+        candidates = self.search(tags=tags, types=types, limit=len(self._places))
+        nearby_places = []
+        for candidate in candidates:
+            if candidate.id == place_id or candidate.latitude is None or candidate.longitude is None:
+                continue
+            distance_km = calculate_distance_between_places(origin, candidate)
+            if radius_km is None or distance_km <= radius_km:
+                nearby_places.append(NearbyPlace(place=candidate, distance_km=distance_km))
+        nearby_places.sort(key=lambda candidate: (candidate.distance_km, candidate.place.id))
+        return nearby_places[:limit]
