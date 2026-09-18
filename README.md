@@ -1,61 +1,40 @@
 # 3 Days in Italy
 
-A dataset-grounded three-day Italy trip planner.
+A conversational three-day trip planner grounded in [Italy place data](data/italy.json).
 
-## Local setup
+## Run
 
-Requires Python 3.12+ and uv (the checkout pins Python 3.13).
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 uv sync
-uv run pytest
-```
-
-## Run the agent in Studio
-
-Copy `.env.example` to `.env` and fill in your OpenAI and LangSmith API keys.
-The default model is GPT-5 mini; `ITALY_AGENT_MODEL` can select another
-OpenAI model using the `openai:model-name` format.
-
-```sh
 cp .env.example .env
-# Fill in .env, then start the local Agent Server:
+# Add your OpenAI and LangSmith API keys to .env.
 uv run langgraph dev
 ```
 
-Open the Studio URL printed by the server, select `italy_agent`, and send:
+Open the Studio URL, select `italy_agent`, and try:
 
 > Plan a relaxed three-day food and wine trip.
 
-Inspect the search/lookup tool calls and returned place IDs in the trace.
-The state also exposes `preferences` and `itinerary` as structured data for a
-frontend; `itinerary` stays null until a complete three-day plan is saved.
-Each save runs dataset validation and exposes its result as `validation`.
-Errors prevent saving; warnings flag uncertain hours, short visits, or long
-geographic transitions. Calendar-dependent hours and real travel times remain
-unverified. Check details in [validation.py](src/italy_agent/validation.py).
-Try “Make day two quieter” in the same thread and inspect the updated itinerary.
-Continue in the same thread to retain conversation history. Agent Server
-manages thread persistence locally; this is a development setup.
-See the [LangGraph local-server guide](https://docs.langchain.com/oss/python/langgraph/local-server).
+Then, in the same thread:
 
-Tests and repository searches run without API keys. Tests use a scripted model;
-a live Studio run is needed to evaluate actual planning quality.
+> Make day two quieter.
 
-## Place Repository
-
-Try a search from the checkout:
+## Tests & evals
 
 ```sh
-uv run python - <<'PY'
-from italy_agent.repository import PlaceRepository
-
-repo = PlaceRepository()
-for place in repo.search(tags=["wine"]):
-    print(place.name, place.city)
-PY
+uv run pytest  # Offline tests
+uv run evals   # Run the five synthetic examples
 ```
 
-The supplied [dataset](data/italy.json) is preserved unchanged. Normalization and
-search behavior are documented alongside [Place](src/italy_agent/models.py) and
-[PlaceRepository](src/italy_agent/repository.py).
+The eval loads `.env` automatically and creates `italy-recommendations-v1` from
+[five synthetic conversations](evals/conversation.json) on the first run.
+One LLM judge scores request fulfillment from 1–5 and explains each score.
+Agent and judge calls are paid. No evaluator setup in the UI is needed.
+
+Open the experiment link printed by LangSmith, inspect low-scoring examples,
+change the agent prompt or model, and rerun to compare experiments on the same
+dataset. Edit examples in LangSmith, or change `dataset_name` in
+[evals/conversation.py](evals/conversation.py) to upload the local JSON as a new
+dataset. The same file contains the judge's rubric.

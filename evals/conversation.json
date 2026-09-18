@@ -1,0 +1,48 @@
+[
+  {
+    "inputs": {
+      "turns": ["Plan three relaxed days in Rome focused on local food and historic sights. Keep it to two main stops per day and stay in Rome."]
+    },
+    "outputs": {
+      "criteria": "A three-day Rome plan with two main stops per day, including both local food and historic sights. No excursions to other cities."
+    }
+  },
+  {
+    "inputs": {
+      "turns": ["Plan three days in Florence for someone who loves art and architecture. I prefer a packed itinerary and don't want wine tastings."]
+    },
+    "outputs": {
+      "criteria": "A full three-day Florence itinerary emphasizing art and architecture, with several activities each day and no wine tastings."
+    }
+  },
+  {
+    "inputs": {
+      "turns": ["Plan three budget-conscious days in Rome. Prioritize free or inexpensive places, local food, and walks. Avoid luxury restaurants and expensive tours."]
+    },
+    "outputs": {
+      "criteria": "Recommendations favor inexpensive sights, walks, and casual local food in Rome. Avoid luxury dining and expensive tours; explain uncertainty rather than promise unverified prices."
+    }
+  },
+  {
+    "inputs": {
+      "turns": [
+        "Plan three days in Florence focused on food, wine, and art, with three main stops each day.",
+        "Make day two quieter with just one main stop. Keep days one and three unchanged and keep the food, wine, and art focus overall."
+      ]
+    },
+    "outputs": {
+      "criteria": "The initial plan reflects all three interests in Florence. The revision reduces day two to one main stop, preserves days one and three, and retains the overall interests. The saved plan must reflect the change, not just the response."
+    }
+  },
+  {
+    "inputs": {
+      "turns": [
+        "Plan a relaxed three-day Rome trip with historic sights and local food, two main stops each day.",
+        "Actually, make food the main focus and skip museums. Keep the relaxed pace and stay in Rome."
+      ]
+    },
+    "outputs": {
+      "criteria": "The initial plan fits the history and food request. The revised recommendations emphasize food, exclude museums, remain in Rome, and preserve the relaxed two-stops-per-day pace."
+    }
+  }
+]
