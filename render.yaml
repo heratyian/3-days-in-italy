@@ -1,0 +1,71 @@
+services:
+  # LangGraph agent backend
+  - type: pserv
+    name: 3-days-in-italy-agent
+    runtime: python
+    rootDir: agent
+
+    buildCommand: uv sync --frozen
+    startCommand: uv run langgraph dev --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: LANGSMITH_API_KEY
+        sync: false
+
+      - key: LANGSMITH_TRACING
+        value: "true"
+
+      - key: LANGSMITH_PROJECT
+        value: 3-days-in-italy
+
+      - key: ITALY_AGENT_MODEL
+        value: openai:gpt-5-mini
+
+  # Next.js frontend
+  - type: web
+    name: 3-days-in-italy
+    runtime: node
+    rootDir: ui
+
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+
+    envVars:
+      # Wire the frontend directly to the agent over Render's
+      # private network.
+      - key: LANGGRAPH_API_URL
+        fromService:
+          type: pserv
+          name: 3-days-in-italy-agent
+          property: hostport
+
+      - key: LANGGRAPH_ASSISTANT_ID
+        value: italy_agent
+
+      # Not required when talking to our own private agent.
+      - key: LANGGRAPH_API_KEY
+        value: ""
+
+      # Render generates this for us instead of requiring
+      # another secret to be manually configured.
+      - key: TEST_AUTH_PASSWORD
+        generateValue: true
+
+      # Password-only login.
+      - key: TEST_AUTH_USERNAME
+        value: ""
+
+      - key: NEXT_PUBLIC_APP_NAME
+        value: 3 Days in Italy
+
+      - key: NEXT_PUBLIC_APP_DESCRIPTION
+        value: Plan a trip, then make it your own.
+
+      - key: MAX_MESSAGE_LENGTH
+        value: "10000"
+
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "20"
