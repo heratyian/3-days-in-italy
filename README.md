@@ -6,7 +6,7 @@ A conversational three-day trip planner grounded in [Italy place data](agent/dat
 `ui/` contains the Next.js testing UI, managed by npm. Each has its own environment
 file and can be run or deployed independently.
 
-## Run
+## Run Agent
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
@@ -26,7 +26,7 @@ Then, in the same thread:
 
 > Make day two quieter.
 
-## User testing UI
+## Run UI
 
 Requires Node.js 22+ and npm. Start the LangGraph server above, then open another
 terminal at the repository root:
