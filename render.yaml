@@ -69,3 +69,8 @@ services:
 
       - key: RATE_LIMIT_PER_MINUTE
         value: "20"
+      - key: APP_URL
+        fromService:
+          type: web
+          name: 3-days-in-italy
+          envVarKey: RENDER_EXTERNAL_URL

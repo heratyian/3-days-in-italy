@@ -37,5 +37,19 @@ export function readSession(token: string | undefined): Session | null {
 }
 
 export function sameOrigin(request: Request): boolean {
-  return request.headers.get("origin") === new URL(request.url).origin;
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  const allowedOrigin = process.env.APP_URL;
+
+  if (allowedOrigin) {
+    try {
+      return new URL(origin).origin === new URL(allowedOrigin).origin;
+    } catch {
+      return false;
+    }
+  }
+
+  // Local development
+  return new URL(origin).origin === new URL(request.url).origin;
 }
