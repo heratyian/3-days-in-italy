@@ -3,5 +3,9 @@
   "graphs": {
     "italy_agent": "./src/italy_agent/graph.py:graph"
   },
-  "env": ".env"
+  "env": ".env",
+  "http": {
+    "app": "./src/italy_agent/api.py:app",
+    "enable_custom_route_auth": true
+  }
 }

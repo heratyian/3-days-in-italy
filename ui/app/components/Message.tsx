@@ -1,11 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import Markdown from "react-markdown";
+import { useMemo, useState } from "react";
+import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import placeReferences from "../../lib/place-references";
+import PlaceReference from "./PlaceReference";
+import type { Place } from "../../lib/places";
 
-export default function Message({ human, content }: { human: boolean; content: string }) {
+const noPlaces: Record<string, Place | undefined> = {};
+
+export default function Message({ human, content, places = noPlaces, onSelectPlace = () => {} }: {
+  human: boolean; content: string; places?: Record<string, Place | undefined>; onSelectPlace?: (placeId: string) => void;
+}) {
   const [copyStatus, setCopyStatus] = useState("Copy");
+  const components = useMemo<Components>(() => ({
+    img: () => null,
+    button: ({ children, node }) => {
+      const place = places[String(node?.properties["data-place-id"] ?? "")];
+      return place ? <PlaceReference place={place} onSelect={onSelectPlace}>{children}</PlaceReference> : <>{children}</>;
+    },
+    a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
+  }), [onSelectPlace, places]);
   async function copy() {
     try { await navigator.clipboard.writeText(content); setCopyStatus("Copied"); }
     catch { setCopyStatus("Could not copy"); }
@@ -18,10 +33,7 @@ export default function Message({ human, content }: { human: boolean; content: s
       </div>
       {human ? <div className="plain-message">{content}</div> : <div className="markdown">
         {/* Raw HTML stays disabled; external images aren't loaded from model output. */}
-        <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
-          img: () => null,
-          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
-        }}>{content}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[[placeReferences, places]]} skipHtml components={components}>{content}</Markdown>
       </div>}
     </div>
   </article>;

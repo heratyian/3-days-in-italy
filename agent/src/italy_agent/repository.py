@@ -163,3 +163,6 @@ class PlaceRepository:
                 nearby_places.append(NearbyPlace(place=candidate, distance_km=distance_km))
         nearby_places.sort(key=lambda candidate: (candidate.distance_km, candidate.place.id))
         return nearby_places[:limit]
+
+
+repository = PlaceRepository()

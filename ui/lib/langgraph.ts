@@ -11,7 +11,7 @@ export function langgraphClient() {
   });
 }
 
-function getLangGraphApiUrl(): string {
+export function getLangGraphApiUrl(): string {
   if (process.env.LANGGRAPH_API_URL) {
     return process.env.LANGGRAPH_API_URL;
   }

@@ -42,6 +42,7 @@ npm run dev
 Open http://localhost:3000 and enter the shared password. The UI streams replies,
 preserves the conversation across refreshes, and offers a fresh conversation button.
 LangSmith Studio remains the place for traces and debugging.
+Restart `langgraph dev` after changing `agent/langgraph.json` so custom API routes load.
 
 Deploy `ui/` as a normal Next.js app: set the variables from
 [ui/.env.example](ui/.env.example), run `npm run build`, then `npm start`.

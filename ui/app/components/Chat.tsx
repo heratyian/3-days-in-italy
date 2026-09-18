@@ -5,6 +5,8 @@ import { Client, type Message as GraphMessage } from "@langchain/langgraph-sdk";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { publicMessage } from "@/lib/messages";
 import Message from "./Message";
+import PlaceDetails from "./PlaceDetails";
+import { usePlaces } from "@/lib/use-places";
 
 type Submission = { id: string; type: "human"; content: string };
 
@@ -23,6 +25,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   const storageKey = `langgraph_thread_id:${sessionId}`;
   const [ready, setReady] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const [authExpired, setAuthExpired] = useState(false);
@@ -63,6 +66,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   });
   const busy = pending || stream.isLoading || stream.isThreadLoading;
   const visible = stream.messages.map(publicMessage).filter((message) => message !== null && message.content);
+  const placeData = usePlaces(visible.filter((message) => message!.type !== "human").map((message) => message!.content).join("\n"));
 
   useEffect(() => {
     try { setThreadId(localStorage.getItem(storageKey)); } catch { /* Storage is optional. */ }
@@ -105,6 +109,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   function newConversation() {
     if (busy) return;
     rememberThread(null);
+    setSelectedPlaceId(null);
     setInput(""); setError(""); setLastSubmission(null);
     followNewest.current = true;
     textarea.current?.focus();
@@ -131,7 +136,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
         <h2 className="h5 text-body">Where would you like to begin?</h2>
         <p>Send a message to start your conversation.</p>
       </div>}
-      {visible.map((message, index) => <Message key={message!.id ?? index} human={message!.type === "human"} content={message!.content} />)}
+      {visible.map((message, index) => <Message key={message!.id ?? index} human={message!.type === "human"} content={message!.content} onSelectPlace={setSelectedPlaceId} places={placeData.places} />)}
       {busy && <p className="small text-body-secondary px-3" role="status">{stream.isThreadLoading ? "Loading conversation…" : "Responding…"}</p>}
     </div>
     {error && <div className="alert alert-danger mb-2" role="alert">
@@ -139,6 +144,10 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
       {authExpired ? <button className="btn btn-sm btn-outline-danger" onClick={() => window.location.reload()}>Sign in</button>
         : <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={() => lastSubmission ? void send(lastSubmission) : window.location.reload()}>Try again</button>}
     </div>}
+    {placeData.error && <div className="alert alert-warning py-2" role="status">
+      {placeData.error} <button className="btn btn-sm btn-link" onClick={placeData.retry}>Retry place details</button>
+    </div>}
+    <PlaceDetails place={selectedPlaceId ? placeData.places[selectedPlaceId] : undefined} onClose={() => setSelectedPlaceId(null)} />
     <form onSubmit={submit} className="composer border-top pt-3">
       <label className="visually-hidden" htmlFor="message">Message</label>
       <div className="d-flex gap-2 align-items-end">

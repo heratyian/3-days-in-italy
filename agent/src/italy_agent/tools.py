@@ -11,11 +11,8 @@ from pydantic import Field, ValidationError
 
 from italy_agent.geography import calculate_distance_between_places
 from italy_agent.models import DistanceResult, Itinerary, ItineraryDay, TravelerPreferences
-from italy_agent.repository import PlaceRepository
+from italy_agent.repository import repository
 from italy_agent.validation import validate_itinerary as check_itinerary
-
-
-repository = PlaceRepository()
 
 
 @tool
