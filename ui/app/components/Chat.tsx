@@ -132,12 +132,12 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   return <MapsPreference><section className="chat" aria-label="Conversation">
     <div className="d-flex flex-wrap align-items-center justify-content-between py-3 gap-2">
       <div className="d-flex align-items-center gap-2">
-        <button className="btn btn-sm btn-outline-secondary" onClick={newConversation} disabled={busy}>New conversation</button>
         <button className="btn btn-sm btn-outline-secondary" onClick={() => setItineraryOpen(!itineraryOpen)}
           aria-haspopup="dialog" aria-expanded={itineraryOpen} aria-controls="itinerary-panel">{itineraryOpen ? "Hide itinerary" : "View itinerary"}</button>
       </div>
       <div className="d-flex align-items-center gap-3">
         <MapsProviderSelect />
+        <button className="btn btn-sm btn-outline-danger" onClick={newConversation} disabled={busy}>Restart</button>
         <button className="btn btn-sm btn-link text-body-secondary" onClick={logout} disabled={busy}>Sign out</button>
       </div>
     </div>
@@ -172,10 +172,6 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
             }
           }} />
         <button type="submit" className="btn btn-dark px-4" disabled={busy || authExpired || !input.trim()}>Send</button>
-      </div>
-      <div id="message-help" className="small text-body-secondary mt-2 d-flex flex-wrap justify-content-between gap-1">
-        <span>Enter to send · Shift + Enter for a new line</span>
-        <span>{input.length.toLocaleString()} / {maxMessageLength.toLocaleString()}</span>
       </div>
     </form>
     <ItineraryPanel open={itineraryOpen} itinerary={itinerary} places={placeData.places} busy={busy}
