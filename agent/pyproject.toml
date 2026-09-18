@@ -2,7 +2,6 @@
 name = "3-days-in-italy"
 version = "0.1.0"
 description = "A dataset-grounded three-day Italy trip planner"
-readme = "README.md"
 authors = [
     { name = "Ian Heraty", email = "heratyian@gmail.com" }
 ]

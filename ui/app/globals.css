@@ -1,0 +1,17 @@
+body { background: #fff; color: #20262e; }
+.app-shell { max-width: 800px; height: 100dvh; display: flex; flex-direction: column; }
+.login-panel { max-width: 360px; }
+.chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.messages { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.message { max-width: 100%; overflow-wrap: anywhere; }
+.message-user { margin-left: min(3rem, 8%); }
+.message-assistant { margin-right: min(3rem, 8%); }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown pre { background: #f0f2f4; border-radius: .375rem; padding: 1rem; overflow-x: auto; }
+.markdown pre code { white-space: pre; overflow-wrap: normal; }
+.markdown table { display: block; overflow-x: auto; border-collapse: collapse; margin-bottom: 1rem; }
+.markdown th, .markdown td { padding: .5rem; border: 1px solid #dee2e6; }
+.markdown blockquote { border-left: 3px solid #ced4da; padding-left: 1rem; color: #495057; }
+.composer { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.composer textarea { resize: vertical; min-height: 3.5rem; max-height: 25dvh; }
+.plain-message { white-space: pre-wrap; }
