@@ -9,8 +9,7 @@ Take-home Project (self-paced)
 
 You have 3 days in Italy. The file [italy.json](https://storage.googleapis.com/interview-booking/italy.json) contains ~100 places across several cities and regions - restaurants, historic sites, museums, vineyards, coastal towns, markets, and experiences.
 
-Build an interactive trip planner that helps a user create a personalized 3-day itinerary from this
-data.
+Build an interactive trip planner that helps a user create a personalized 3-day itinerary from this data.
 
 ## The Data
 
