@@ -40,7 +40,7 @@ services:
     envVars:
       # Wire the frontend directly to the agent over Render's
       # private network.
-      - key: LANGGRAPH_API_URL
+      - key: LANGGRAPH_HOSTPORT
         fromService:
           type: pserv
           name: 3-days-in-italy-agent
