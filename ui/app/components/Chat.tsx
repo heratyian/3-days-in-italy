@@ -7,6 +7,9 @@ import { publicMessage } from "@/lib/messages";
 import Message from "./Message";
 import PlaceDetails from "./PlaceDetails";
 import { usePlaces } from "@/lib/use-places";
+import type { Itinerary } from "@/lib/itinerary";
+import ItineraryPanel from "./ItineraryPanel";
+import { MapsPreference, MapsProviderSelect } from "./MapsPreference";
 
 type Submission = { id: string; type: "human"; content: string };
 
@@ -25,6 +28,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   const storageKey = `langgraph_thread_id:${sessionId}`;
   const [ready, setReady] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [itineraryOpen, setItineraryOpen] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
@@ -51,7 +55,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
     } catch { /* Chat still works when browser storage is disabled. */ }
   }
 
-  const stream = useStream<{ messages: GraphMessage[] }>({
+  const stream = useStream<{ messages: GraphMessage[]; itinerary?: Itinerary | null }>({
     client,
     assistantId: "agent", // The server selects the configured assistant; the browser cannot override it.
     threadId,
@@ -66,7 +70,9 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   });
   const busy = pending || stream.isLoading || stream.isThreadLoading;
   const visible = stream.messages.map(publicMessage).filter((message) => message !== null && message.content);
-  const placeData = usePlaces(visible.filter((message) => message!.type !== "human").map((message) => message!.content).join("\n"));
+  const itinerary = threadId ? stream.values.itinerary : null;
+  const placeData = usePlaces(visible.filter((message) => message!.type !== "human").map((message) => message!.content).join("\n"),
+    itinerary?.days.flatMap((day) => day.stops.map((stop) => stop.place_id)));
 
   useEffect(() => {
     try { setThreadId(localStorage.getItem(storageKey)); } catch { /* Storage is optional. */ }
@@ -123,10 +129,17 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
 
   if (!ready) return <p className="py-4 text-body-secondary" role="status">Loading conversation…</p>;
 
-  return <section className="chat" aria-label="Conversation">
-    <div className="d-flex justify-content-between py-3 gap-2">
-      <button className="btn btn-sm btn-outline-secondary" onClick={newConversation} disabled={busy}>New conversation</button>
-      <button className="btn btn-sm btn-link text-body-secondary" onClick={logout} disabled={busy}>Sign out</button>
+  return <MapsPreference><section className="chat" aria-label="Conversation">
+    <div className="d-flex flex-wrap align-items-center justify-content-between py-3 gap-2">
+      <div className="d-flex align-items-center gap-2">
+        <button className="btn btn-sm btn-outline-secondary" onClick={newConversation} disabled={busy}>New conversation</button>
+        <button className="btn btn-sm btn-outline-secondary" onClick={() => setItineraryOpen(!itineraryOpen)}
+          aria-haspopup="dialog" aria-expanded={itineraryOpen} aria-controls="itinerary-panel">{itineraryOpen ? "Hide itinerary" : "View itinerary"}</button>
+      </div>
+      <div className="d-flex align-items-center gap-3">
+        <MapsProviderSelect />
+        <button className="btn btn-sm btn-link text-body-secondary" onClick={logout} disabled={busy}>Sign out</button>
+      </div>
     </div>
     <div className="messages" ref={messages} role="log" aria-label="Messages" aria-live="polite" aria-relevant="additions text" onScroll={() => {
       const element = messages.current!;
@@ -165,5 +178,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
         <span>{input.length.toLocaleString()} / {maxMessageLength.toLocaleString()}</span>
       </div>
     </form>
-  </section>;
+    <ItineraryPanel open={itineraryOpen} itinerary={itinerary} places={placeData.places} busy={busy}
+      onClose={() => setItineraryOpen(false)} onSelectPlace={setSelectedPlaceId} />
+  </section></MapsPreference>;
 }

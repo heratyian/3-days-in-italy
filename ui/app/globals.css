@@ -55,3 +55,12 @@ body { background: #fff; color: #20262e; }
   @keyframes place-enter { from { opacity: 0; transform: translateY(1rem); } }
 }
 @media (prefers-reduced-motion: reduce) { .place-details[open] { animation: none; } }
+
+.maps-provider { width: auto; max-width: 10rem; }
+
+
+.itinerary-day + .itinerary-day { border-top: 1px solid #dee2e6; padding-top: 1.25rem; margin-top: 1.25rem; }
+.itinerary-stops { padding-left: 1.25rem; margin-bottom: 0; }
+.itinerary-stops li { padding-left: .25rem; margin-bottom: 1rem; }
+.itinerary-stops li::marker { color: #6c757d; font-size: .85rem; }
+.itinerary-day-maps { margin-top: 1rem; }

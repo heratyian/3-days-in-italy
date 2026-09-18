@@ -30,7 +30,7 @@ test("mutations require a matching browser origin", () => {
 
 test("only one bounded human message is accepted; privileged fields are discarded", () => {
   const message = { type: "human", id: crypto.randomUUID(), content: "Hello" };
-  assert.deepEqual(readUserMessage({ input: { messages: [message], preferences: { budget: "luxury" } }, command: {} }, 10), message);
+  assert.deepEqual(readUserMessage({ input: { messages: [message], preferences: { budget: "luxury" }, itinerary: { days: [] } }, command: {} }, 10), message);
   for (const messages of [[], [message, message], [{ ...message, type: "system" }],
     [{ ...message, content: " " }], [{ ...message, content: "a".repeat(11) }]]) {
     assert.throws(() => readUserMessage({ input: { messages } }, 10));
@@ -42,7 +42,7 @@ test("tool output, reasoning, and metadata never enter public messages", () => {
     { type: "tool", content: "internal tool output" },
     { type: "system", content: "secret prompt" },
     { type: "ai", content: [{ type: "reasoning", text: "private" }, { type: "text", text: "Hello" }], response_metadata: { secret: "hidden" } },
-  ], preferences: { private: true } }), { messages: [{ type: "ai", content: "Hello" }] });
+  ], preferences: { private: true } }), { messages: [{ type: "ai", content: "Hello" }], itinerary: null });
 });
 
 test("request size is enforced without trusting Content-Length", async () => {

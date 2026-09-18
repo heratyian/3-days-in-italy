@@ -36,10 +36,3 @@ const icons: Record<string, string> = {
 export function getPlaceIcon(place: Place): string | undefined {
   return place.type ? icons[place.type] : undefined;
 }
-
-export function getGoogleMapsUrl(place: Place): string {
-  const query = place.latitude !== null && place.longitude !== null
-    ? `${place.latitude},${place.longitude}`
-    : [place.name, place.city, place.region, "Italy"].filter(Boolean).join(", ");
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}

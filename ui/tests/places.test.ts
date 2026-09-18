@@ -4,8 +4,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Message from "../app/components/Message";
 import PlaceDetails from "../app/components/PlaceDetails";
-import { getPlace, getGoogleMapsUrl, getPlaceIcon } from "../lib/places";
+import { getPlace, getPlaceIcon } from "../lib/places";
 
+import { getPlaceMapUrl, buildPlaceQuery } from "../lib/maps";
 import { museum, places } from "./place-fixtures";
 
 const render = (content: string) => renderToStaticMarkup(createElement(Message, { human: false, content, places }));
@@ -57,7 +58,7 @@ test("streaming prefixes render without errors and completed references resolve"
   assert.match(render(content), /class="place-reference"/);
 });
 
-test("details show source facts and secure Maps links with coordinates preferred", () => {
+test("details show source facts and secure Maps links with named places", () => {
   const place = museum;
   const html = renderToStaticMarkup(createElement(PlaceDetails, { place, onClose() {} }));
   assert.match(html, /<dialog/);
@@ -67,8 +68,8 @@ test("details show source facts and secure Maps links with coordinates preferred
   assert.match(html, /Borgo · Rome · Lazio/);
   assert.match(html, /target="_blank" rel="noopener noreferrer"/);
   assert.doesNotMatch(html, /place_010/);
-  assert.equal(new URL(getGoogleMapsUrl(place)).searchParams.get("query"), "41.9065,12.4536");
-  assert.equal(new URL(getGoogleMapsUrl({ ...place, latitude: null })).searchParams.get("query"), "Vatican Museums, Rome, Lazio, Italy");
+  assert.equal(new URL(getPlaceMapUrl(place, "google")).searchParams.get("query"), buildPlaceQuery(place));
+  assert.equal(new URL(getPlaceMapUrl({ ...place, latitude: null }, "google")).searchParams.get("query"), buildPlaceQuery(place));
   const missing = renderToStaticMarkup(createElement(PlaceDetails, {
     place: { ...place, booking_required: null, opening_hours: null, price_range: null }, onClose() {},
   }));

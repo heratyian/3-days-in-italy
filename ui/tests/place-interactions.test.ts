@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import Message from "../app/components/Message";
 import PlaceDetails from "../app/components/PlaceDetails";
 import { usePlaces } from "../lib/use-places";
+import { buildPlaceQuery } from "../lib/maps";
 import { places } from "./place-fixtures";
 
 test("selecting places updates one sheet; close, Escape, and outside clicks clear the selection", async () => {
@@ -47,7 +48,7 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
     assert.equal(dialog.open, true);
     assert.match(dialog.textContent!, /Vatican Museums/);
     assert.match(dialog.textContent!, /Booking required/);
-    assert.equal(dialog.querySelector("a")!.href, "https://www.google.com/maps/search/?api=1&query=41.9065%2C12.4536");
+    assert.equal(new URL(dialog.querySelector("a")!.href).searchParams.get("query"), buildPlaceQuery(places.place_010));
     await act(async () => dialog.querySelector<HTMLButtonElement>("button")!.click());
     assert.equal(dialog.open, false);
     await act(async () => references[1].click());

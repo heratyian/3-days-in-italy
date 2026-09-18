@@ -36,7 +36,7 @@ async function handle(request: Request, context: Context) {
 
     if (state) {
       const saved = await client.threads.getState(threadId);
-      // The hook only needs the current checkpoint and visible messages, not graph internals.
+      // The hook only needs the current checkpoint, visible messages, and saved routes, not graph internals.
       return Response.json({ values: publicValues(saved.values), checkpoint: saved.checkpoint,
         next: [], tasks: [], created_at: saved.created_at, parent_checkpoint: null,
       }, { headers: { "Cache-Control": "no-store" } });

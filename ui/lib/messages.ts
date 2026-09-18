@@ -1,4 +1,6 @@
-/** Only tester-visible text crosses the proxy; tool results and reasoning stay in Studio. */
+import { publicItinerary } from "./itinerary";
+
+/** Only traveler-visible messages and saved route fields cross the proxy; tool results and reasoning stay in Studio. */
 export function publicMessage(value: unknown) {
   if (!value || typeof value !== "object") return null;
   const message = value as Record<string, unknown>;
@@ -14,7 +16,8 @@ export function publicMessage(value: unknown) {
 
 export function publicValues(value: unknown) {
   const messages = value && typeof value === "object" && "messages" in value ? value.messages : [];
-  return { messages: Array.isArray(messages) ? messages.map(publicMessage).filter((message) => message !== null) : [] };
+  const itinerary = value && typeof value === "object" && "itinerary" in value ? publicItinerary(value.itinerary) : null;
+  return { messages: Array.isArray(messages) ? messages.map(publicMessage).filter((message) => message !== null) : [], itinerary };
 }
 
 export function readUserMessage(body: unknown, maxLength: number) {

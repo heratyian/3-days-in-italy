@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getGoogleMapsUrl, getPlaceIcon, type Place } from "../../lib/places";
+import { getPlaceIcon, type Place } from "../../lib/places";
+import { getPlaceMapUrl } from "../../lib/maps";
+import MapsAction from "./MapsAction";
+import { useMapsPreference } from "./MapsPreference";
 
 export default function PlaceDetails({ place, onClose }: { place: Place | undefined; onClose: () => void }) {
+  const { provider } = useMapsPreference();
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const element = dialog.current!;
@@ -37,7 +41,7 @@ export default function PlaceDetails({ place, onClose }: { place: Place | undefi
         {place.opening_hours && <><dt>Listed hours</dt><dd>{place.opening_hours}</dd></>}
       </dl>
       {place.seasonal_notes && <div className="place-notes"><h3 className="h6">Useful notes</h3><p>{place.seasonal_notes}</p></div>}
-      <a className="maps-link" href={getGoogleMapsUrl(place)} target="_blank" rel="noopener noreferrer">Open in Google Maps ↗<span className="visually-hidden"> (opens in a new tab)</span></a>
+      <MapsAction href={getPlaceMapUrl(place, provider)} context={place.name} />
     </>}
   </dialog>;
 }

@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { getPlace, type Place } from "./places";
 
-/** Fetch only mentioned IDs, once per chat, including negative (404) results. */
-export function usePlaces(content: string) {
+/** Fetch referenced and saved itinerary places once per chat, including negative (404) results. */
+export function usePlaces(content: string, itineraryPlaceIds: string[] = []) {
   const [places, setPlaces] = useState<Record<string, Place | undefined>>({});
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   // A stable dependency avoids restarting requests for every streamed token.
-  const referenceIds = [...new Set([...content.matchAll(/\((place_\d+)\)/g)].map((match) => match[1]))].sort().join(",");
+  const messagePlaceIds = [...content.matchAll(/\((place_\d+)\)/g)].map((match) => match[1]);
+  const referenceIds = [...new Set([...messagePlaceIds, ...itineraryPlaceIds])].sort().join(",");
 
   useEffect(() => {
     const missing = referenceIds.split(",").filter((id) => id && !Object.hasOwn(places, id));
