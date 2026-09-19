@@ -57,13 +57,20 @@ The optional in-memory rate limit is per Node process and resets on restart; use
 single instance or the hosting platform's rate limiting for a shared deployment-wide
 limit. The backend must also be private or authenticated when deployed.
 
-Run `npm test` and `npm run typecheck` from `ui/` for the UI's security checks.
+Run `npm run lint`, `npm run typecheck`, and `npm test` from `ui/` to check the UI.
+Use `npm run lint:fix` to apply available lint fixes.
+Format with `npm run format`, or verify formatting with `npm run format:check`.
+VS Code workspace settings enable format-on-save for Python and UI code after
+installing the recommended Ruff and Prettier extensions.
 
 ## Tests & evals
 
 Run from `agent/`:
 
 ```sh
+uv run ruff check .  # Lint source, tests, and evals; add --fix for available fixes
+uv run ruff format .  # Format Python
+uv run ruff format --check .  # Verify formatting without editing
 uv run pytest  # Offline tests
 uv run evals   # Run the five synthetic examples
 ```

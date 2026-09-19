@@ -24,7 +24,11 @@ evals = "evals.conversation:main"
 dev = [
     "langgraph-cli[inmem]>=0.4,<1",
     "pytest>=8,<10",
+    "ruff>=0.16.8",
 ]
+
+[tool.ruff]
+line-length = 100
 
 [tool.setuptools]
 packages = ["italy_agent", "evals"]
