@@ -35,6 +35,29 @@ test("bold, italic, headings and lists preserve Markdown around references", () 
   assert.match(html, /⚠️ <strong>Book ahead/);
 });
 
+test("follow-up suggestions hide bare and comma-separated IDs and preserve punctuation", () => {
+  const records = Object.fromEntries([
+    ["place_035", "Chianti Day Trip by Bike"], ["place_029", "Buca Mario"],
+    ["place_033", "Buca dell'Orafo"], ["place_040", "San Miniato al Monte"],
+  ].map(([id, name]) => [id, { ...museum, id, name }]));
+  const content = "Would you like any changes?\n\n"
+    + "- Swap the Siena day for a Chianti day trip by bike (Chianti Day Trip by Bike, place_035) — more outdoors.\n"
+    + "- Add or swap restaurants (I found Buca Mario place_029, Buca dell'Orafo place_033).\n"
+    + "- Add a sunset at San Miniato al Monte place_040.";
+  const html = renderToStaticMarkup(createElement(Message, { human: false, content, places: records }));
+  assert.doesNotMatch(html, /place_\d/);
+  assert.equal((html.match(/class="place-reference"/g) ?? []).length, 4);
+  assert.match(html, /Chianti Day Trip by Bike<\/button>\) — more outdoors/);
+  assert.match(html, /Buca Mario<\/button>, /);
+  assert.match(html, /San Miniato al Monte<\/button>\./);
+  assert.match(render("(**Vatican Museums**, place_010)"), /<strong>Vatican Museums<\/strong><\/button>\)/);
+  assert.match(render("Mystery place_999."), /Mystery\./);
+  const literal = render("`Vatican Museums place_010`\n\n```\nVatican Museums, place_010\n```");
+  assert.match(literal, /Vatican Museums place_010<\/code>/);
+  assert.match(literal, /Vatican Museums, place_010/);
+  assert.doesNotMatch(literal, /class="place-reference"/);
+});
+
 test("unknown, mismatched and malformed references remain safe prose", () => {
   const html = render("Visit Mystery Museum (place_999). Wrong Museum (place_010). Broken (place_nope).");
   assert.match(html, /Visit Mystery Museum\. Wrong Museum\./);

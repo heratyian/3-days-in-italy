@@ -24,10 +24,11 @@ export default function placeReferences(places: Record<string, Place | undefined
         }
         if (child.type !== "text") { children.push(child); continue; }
         let start = 0;
-        for (const match of child.value.matchAll(/\s*\(place_\d+\)/g)) {
+        // Accept canonical references plus observed "Name, place_123" and "Name place_123" variants.
+        for (const match of child.value.matchAll(/\s*\((place_\d+)\)|(?:[ \t]*,[ \t]*|[ \t]*)(?<![\w/])(place_\d+)\b/g)) {
           const before = child.value.slice(start, match.index);
           if (before) children.push({ type: "text", value: before });
-          const placeId = match[0].trim().slice(1, -1);
+          const placeId = match[1] ?? match[2];
           const place = places[placeId];
           const previous = children.at(-1);
           if (interactive && place && previous) {

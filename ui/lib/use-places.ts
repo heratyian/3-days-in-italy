@@ -9,7 +9,7 @@ export function usePlaces(content: string, itineraryPlaceIds: string[] = []) {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   // A stable dependency avoids restarting requests for every streamed token.
-  const messagePlaceIds = [...content.matchAll(/\((place_\d+)\)/g)].map((match) => match[1]);
+  const messagePlaceIds = [...content.matchAll(/\bplace_\d+\b/g)].map((match) => match[0]);
   const referenceIds = [...new Set([...messagePlaceIds, ...itineraryPlaceIds])].sort().join(",");
 
   useEffect(() => {

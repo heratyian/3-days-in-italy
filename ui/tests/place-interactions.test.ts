@@ -14,7 +14,7 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
   const previousFetch = globalThis.fetch;
   const requests: string[] = [];
   let failLookup = false;
-  let content = "**Vatican Museums** (place_010), then Trastevere (place_002), Mystery (place_999).";
+  let content = "(**Vatican Museums**, place_010), then Trastevere place_002, Mystery (place_999).";
   globalThis.fetch = async (url) => {
     requests.push(String(url));
     if (failLookup) throw new Error("Lookup unavailable");
