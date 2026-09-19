@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Client, type Message as GraphMessage } from "@langchain/langgraph-sdk";
 import { useStream } from "@langchain/langgraph-sdk/react";
-import { publicMessage } from "@/lib/messages";
+import { hasNewAssistantText, publicMessage } from "@/lib/messages";
 import Message from "./Message";
 import PlaceDetails from "./PlaceDetails";
 import { usePlaces } from "@/lib/use-places";
@@ -11,6 +11,7 @@ import type { Itinerary } from "@/lib/itinerary";
 import ItineraryPanel from "./ItineraryPanel";
 import { MapsPreference } from "./MapsPreference";
 import ChatMenu from "./ChatMenu";
+import ChatProgress from "./ChatProgress";
 
 type Submission = { id: string; type: "human"; content: string };
 
@@ -42,6 +43,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   const [error, setError] = useState("");
   const [authExpired, setAuthExpired] = useState(false);
   const [pending, setPending] = useState(false);
+  const [responseBaseline, setResponseBaseline] = useState<GraphMessage[]>([]);
   const [lastSubmission, setLastSubmission] = useState<Submission | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const messages = useRef<HTMLDivElement>(null);
@@ -98,6 +100,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
     submitting.current = true;
     failed.current = false;
     followNewest.current = true;
+    setResponseBaseline(stream.messages.map(publicMessage).filter((message) => message !== null));
     setPending(true);
     setError("");
     setLastSubmission(message);
@@ -166,7 +169,8 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
         </div>
       </div>}
       {visible.map((message, index) => <Message key={message!.id ?? index} human={message!.type === "human"} content={message!.content} onSelectPlace={setSelectedPlaceId} places={placeData.places} />)}
-      {busy && <p className="small text-body-secondary px-3" role="status">{stream.isThreadLoading ? "Loading conversation…" : "Responding…"}</p>}
+      {busy && (stream.isThreadLoading || !hasNewAssistantText(stream.messages, responseBaseline))
+        && <ChatProgress key={stream.isThreadLoading ? "history" : "reply"} loadingHistory={stream.isThreadLoading} />}
     </div>
     {error && <div className="alert alert-danger mb-2" role="alert">
       <p className="mb-2">{error}</p>

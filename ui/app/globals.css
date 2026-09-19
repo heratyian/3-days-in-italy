@@ -15,6 +15,10 @@ body { background: #fff; color: #20262e; }
 .composer { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 .composer textarea { resize: vertical; min-height: 3.5rem; max-height: 25dvh; }
 .plain-message { white-space: pre-wrap; }
+.chat-progress { color: #245b53; }
+@media (prefers-reduced-motion: reduce) {
+  .chat-progress .spinner-border { animation: none; }
+}
 
 .markdown { line-height: 1.65; }
 .markdown p, .markdown ul, .markdown ol { margin-bottom: .75rem; }

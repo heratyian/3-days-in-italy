@@ -20,6 +20,19 @@ export function publicValues(value: unknown) {
   return { messages: Array.isArray(messages) ? messages.map(publicMessage).filter((message) => message !== null) : [], itinerary };
 }
 
+/** Previous replies (including partial replies on retry) aren't new streaming text. */
+export function hasNewAssistantText(messages: unknown[], previousMessages: unknown[]): boolean {
+  const previous = new Map(previousMessages.map((value, index) => {
+    const message = publicMessage(value);
+    return [message?.id ?? index, message?.content];
+  }));
+  return messages.some((value, index) => {
+    const message = publicMessage(value);
+    return message?.type === "ai" && Boolean(message.content.trim())
+      && message.content !== previous.get(message.id ?? index);
+  });
+}
+
 export function readUserMessage(body: unknown, maxLength: number) {
   const messages = (body as { input?: { messages?: unknown } } | null)?.input?.messages;
   if (!Array.isArray(messages) || messages.length !== 1) throw new Error("Supply one message.");
