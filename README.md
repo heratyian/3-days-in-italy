@@ -2,8 +2,10 @@
 
 A conversational three-day trip planner grounded in [Italy place data](agent/data/italy.json).
 
-`agent/` contains the Python LangGraph agent, data, tests, and evals, managed by uv.
-`ui/` contains the Next.js testing UI, managed by npm. Each has its own environment
+- `agent/` contains the Python LangGraph agent, data, tests, and evals, managed by uv.
+- `ui/` contains the Next.js UI, managed by npm.
+
+Each has its own environment
 file and can be run or deployed independently.
 
 ## Run Agent
@@ -40,7 +42,7 @@ npm run dev
 ```
 
 Open http://localhost:3000 and enter the shared password. The UI streams replies,
-preserves the conversation across refreshes, and offers a fresh conversation button.
+preserves the conversation across refreshes, and offers a restart button.
 LangSmith Studio remains the place for traces and debugging.
 Restart `langgraph dev` after changing `agent/langgraph.json` so custom API routes load.
 
