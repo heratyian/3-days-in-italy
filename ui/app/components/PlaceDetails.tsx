@@ -9,11 +9,23 @@ import { useMapsPreference } from "./MapsPreference";
 export default function PlaceDetails({ place, onClose }: { place: Place | undefined; onClose: () => void }) {
   const { provider } = useMapsPreference();
   const dialog = useRef<HTMLDialogElement>(null);
+  const open = Boolean(place);
   useEffect(() => {
+    if (!open) return;
     const element = dialog.current!;
-    if (place && !element.open) element.showModal();
-    if (!place && element.open) element.close();
-  }, [place]);
+    const opener = document.activeElement as HTMLElement | null;
+    // Keep Escape from reaching the underlying Bootstrap itinerary modal.
+    function keydown(event: KeyboardEvent) {
+      if (event.key === "Escape") event.stopPropagation();
+    }
+    element.addEventListener("keydown", keydown);
+    element.showModal();
+    return () => {
+      element.removeEventListener("keydown", keydown);
+      element.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open]);
 
   return <dialog ref={dialog} className="place-details" aria-labelledby="place-title"
     onClick={(event) => {
@@ -30,7 +42,7 @@ export default function PlaceDetails({ place, onClose }: { place: Place | undefi
           <h2 id="place-title" className="h4"><span aria-hidden="true">{getPlaceIcon(place)}</span> {place.name}</h2>
           {place.type && <p className="text-body-secondary mb-0 text-capitalize">{place.type.replaceAll("_", " ")}</p>}
         </div>
-        <button type="button" className="btn-close flex-shrink-0" aria-label="Close place details" onClick={onClose} autoFocus />
+        <button type="button" className="btn-close flex-shrink-0" aria-label="Close place details" onClick={onClose} />
       </div>
       <p className="text-body-secondary">{[place.neighborhood, place.city, place.region].filter(Boolean).join(" · ")}</p>
       {place.description && <p>{place.description}</p>}

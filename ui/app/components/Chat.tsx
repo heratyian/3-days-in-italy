@@ -137,6 +137,9 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
 
   if (!ready) return <p className="py-4 text-body-secondary" role="status">Loading conversation…</p>;
 
+  const placeDetails = <PlaceDetails place={selectedPlaceId ? placeData.places[selectedPlaceId] : undefined}
+    onClose={() => setSelectedPlaceId(null)} />;
+
   return <MapsPreference><section className="chat" aria-label="Conversation">
     <div className="d-flex flex-wrap align-items-center justify-content-between py-3 gap-2">
       <div className="d-flex align-items-center gap-2">
@@ -173,7 +176,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
     {placeData.error && <div className="alert alert-warning py-2" role="status">
       {placeData.error} <button className="btn btn-sm btn-link" onClick={placeData.retry}>Retry place details</button>
     </div>}
-    <PlaceDetails place={selectedPlaceId ? placeData.places[selectedPlaceId] : undefined} onClose={() => setSelectedPlaceId(null)} />
+    {!itineraryOpen && placeDetails}
     <form onSubmit={submit} className="composer border-top pt-3">
       <label className="visually-hidden" htmlFor="message">Message</label>
       <div className="d-flex gap-2 align-items-end">
@@ -188,6 +191,8 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
       </div>
     </form>
     <ItineraryPanel open={itineraryOpen} itinerary={itinerary} places={placeData.places} busy={busy}
-      onClose={() => setItineraryOpen(false)} onSelectPlace={setSelectedPlaceId} />
+      onClose={() => { setSelectedPlaceId(null); setItineraryOpen(false); }} onSelectPlace={setSelectedPlaceId}>
+      {itineraryOpen && placeDetails}
+    </ItineraryPanel>
   </section></MapsPreference>;
 }

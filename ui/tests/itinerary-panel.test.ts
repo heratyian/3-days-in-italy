@@ -3,6 +3,7 @@ import test from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement, useState } from "react";
 import ItineraryPanel from "../app/components/ItineraryPanel";
+import PlaceDetails from "../app/components/PlaceDetails";
 import { publicItinerary, type Itinerary } from "../lib/itinerary";
 import { museum, neighborhood, places } from "./place-fixtures";
 
@@ -29,15 +30,23 @@ test("itinerary always opens as a modal and stays open as the plan is created, r
   });
   const { createRoot } = await import("react-dom/client");
   await import("bootstrap/js/dist/modal");
+  // JSDOM lacks native dialog methods; keep application focus and dismissal logic real.
+  dom.window.HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+    this.querySelector<HTMLButtonElement>("button")?.focus();
+  };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   let itinerary: Itinerary | null = null;
   let busy = false;
   let selected: string | undefined;
   function App() {
     const [open, setOpen] = useState(false);
+    const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
     return createElement("div", null,
       createElement("button", { id: "open", onClick: () => setOpen(true) }, "View itinerary"),
       createElement("textarea", { id: "composer" }),
-      createElement(ItineraryPanel, { open, itinerary, busy, places, onClose: () => setOpen(false), onSelectPlace: (id) => { selected = id; } }),
+      createElement(ItineraryPanel, { open, itinerary, busy, places, onClose: () => setOpen(false), onSelectPlace: (id) => { selected = id; setSelectedPlaceId(id); } },
+        open && createElement(PlaceDetails, { place: selectedPlaceId ? places[selectedPlaceId] : undefined, onClose: () => setSelectedPlaceId(null) })),
     );
   }
   const root = createRoot(document.getElementById("root")!);
@@ -55,7 +64,7 @@ test("itinerary always opens as a modal and stays open as the plan is created, r
     assert.equal(dialog.classList.contains("show"), true);
     assert.equal(dialog.getAttribute("aria-modal"), "true");
     assert.equal(dialog.getAttribute("role"), "dialog");
-    assert.ok(dialog.querySelector(".modal-dialog.modal-fullscreen.modal-dialog-scrollable"));
+    assert.ok(dialog.querySelector(".modal-dialog.modal-lg.modal-dialog-scrollable"));
     assert.equal(document.body.classList.contains("modal-open"), true);
     assert.equal(document.body.style.overflow, "hidden");
     assert.equal(document.querySelectorAll(".modal-backdrop").length, 1);
@@ -76,18 +85,42 @@ test("itinerary always opens as a modal and stays open as the plan is created, r
     await act(async () => root.render(createElement(App)));
     assert.equal(dialog.classList.contains("show"), true);
     assert.equal(document.querySelectorAll(".modal-backdrop").length, 1);
-    assert.equal(document.activeElement, focusedControl, "updates preserve focus");
+    assert.ok(document.activeElement === focusedControl, "updates preserve focus");
     assert.match(dialog.textContent!, /Art morning/);
     assert.match(dialog.textContent!, /09:00/);
     assert.match(dialog.textContent!, /See the galleries/);
     assert.match(dialog.textContent!, /Book ahead/);
     assert.match(dialog.textContent!, /Open day in Google Maps/);
     assert.doesNotMatch(dialog.textContent!, /place_\d/);
-    await act(async () => dialog.querySelector<HTMLButtonElement>(".place-reference")!.click());
+    const placeButton = dialog.querySelector<HTMLButtonElement>(".place-reference")!;
+    const scrollBody = dialog.querySelector<HTMLElement>(".modal-body")!;
+    scrollBody.scrollTop = 120;
+    placeButton.focus();
+    await act(async () => placeButton.click());
     assert.equal(selected, museum.id);
-    assert.equal(dialog.classList.contains("show"), false, "close itinerary before opening place details");
-    assert.equal(document.body.classList.contains("modal-open"), false);
-    await openModal();
+    const details = dialog.querySelector("dialog")!;
+    assert.equal(details.open, true);
+    assert.equal(dialog.classList.contains("show"), true, "itinerary remains behind place details");
+    assert.equal(document.body.classList.contains("modal-open"), true);
+    assert.ok(details.contains(document.activeElement), "Bootstrap allows focus in the top dialog");
+    await act(async () => {
+      details.querySelector("button")!.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      details.dispatchEvent(new dom.window.Event("cancel", { cancelable: true }));
+    });
+    assert.equal(details.open, false);
+    assert.equal(dialog.classList.contains("show"), true, "Escape only closes place details");
+    assert.ok(document.activeElement === placeButton, "focus returns to the selected place");
+    assert.equal(scrollBody.scrollTop, 120);
+    await act(async () => placeButton.click());
+    await act(async () => details.querySelector<HTMLButtonElement>("button")!.click());
+    assert.equal(details.open, false);
+    assert.equal(dialog.classList.contains("show"), true);
+    await act(async () => placeButton.click());
+    details.getBoundingClientRect = () => new dom.window.DOMRect(100, 100, 500, 500);
+    await act(async () => details.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: 20, clientY: 20 })));
+    assert.equal(details.open, false);
+    assert.equal(dialog.classList.contains("show"), true, "backdrop only closes place details");
+    assert.equal(scrollBody.scrollTop, 120);
     itinerary = { days: [{ day: 1, title: "Revised afternoon", stops: [{ place_id: neighborhood.id }] }] };
     busy = false;
     await act(async () => root.render(createElement(App)));
@@ -108,7 +141,7 @@ test("itinerary always opens as a modal and stays open as the plan is created, r
     closeButton.focus();
     await act(async () => closeButton.click());
     assert.equal(dialog.classList.contains("show"), false);
-    assert.equal(document.activeElement, openButton);
+    assert.ok(document.activeElement === openButton, "focus returns to itinerary opener");
     await openModal();
     await act(async () => { dialog.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
     assert.equal(dialog.classList.contains("show"), false);

@@ -35,26 +35,16 @@ body { background: #fff; color: #20262e; }
 .place-reference:hover { color: #163e37; text-decoration-color: currentColor; }
 .place-reference:focus-visible, .maps-link:focus-visible { outline: 2px solid #245b53; outline-offset: 3px; border-radius: .15rem; }
 .place-details {
-  position: fixed; inset: 0 0 0 auto; margin: 0; width: min(420px, 45vw);
-  max-width: none; height: 100dvh; max-height: none; padding: 1.5rem;
-  border: 0; border-left: 1px solid #dee2e6; color: inherit;
-  box-shadow: -8px 0 32px #20262e18; overflow-y: auto;
+  position: fixed; inset: 0; margin: auto; width: min(500px, calc(100% - 2rem));
+  max-width: none; max-height: calc(100dvh - 2rem); padding: 1.5rem;
+  border: 1px solid #dee2e6; border-radius: .5rem; color: inherit;
+  box-shadow: 0 8px 32px #20262e30; overflow-y: auto; overscroll-behavior: contain;
 }
-.place-details[open] { animation: place-enter .18s ease-out; }
-.place-details::backdrop { background: #20262e20; }
+.place-details::backdrop { background: #0006; }
 .place-facts dt { font-size: .85rem; color: #495057; }
 .place-facts dd { margin-bottom: .8rem; }
 .place-notes { background: #f6f7f8; border-radius: .5rem; padding: 1rem; margin-bottom: 1.25rem; }
 .place-notes p { margin-bottom: 0; }
-@keyframes place-enter { from { opacity: 0; transform: translateX(1rem); } }
-@media (max-width: 600px) {
-  .place-details {
-    inset: auto 0 0; width: 100%; height: auto; max-height: 90dvh;
-    border: 0; border-radius: 1rem 1rem 0 0; padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-  }
-  @keyframes place-enter { from { opacity: 0; transform: translateY(1rem); } }
-}
-@media (prefers-reduced-motion: reduce) { .place-details[open] { animation: none; } }
 
 .maps-provider { width: auto; max-width: 10rem; }
 

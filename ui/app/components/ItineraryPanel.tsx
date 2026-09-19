@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import type Modal from "bootstrap/js/dist/modal";
 import type { Itinerary } from "../../lib/itinerary";
 import type { Place } from "../../lib/places";
 import ItineraryDays from "./ItineraryDays";
 
-export default function ItineraryPanel({ open, itinerary, places, busy, onClose, onSelectPlace }: {
+export default function ItineraryPanel({ open, itinerary, places, busy, onClose, onSelectPlace, children }: {
   open: boolean; itinerary: Itinerary | null | undefined; places: Record<string, Place | undefined>;
   busy: boolean; onClose: () => void; onSelectPlace: (placeId: string) => void;
+  children?: ReactNode;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const notifyClosed = useEffectEvent(onClose);
@@ -53,10 +54,12 @@ export default function ItineraryPanel({ open, itinerary, places, busy, onClose,
                 : itinerary ? "Updates here as we refine your trip." : "Your plan will take shape here as we chat."}
             </p>
             <ItineraryDays itinerary={itinerary ?? { days: [1, 2, 3].map((day) => ({ day, title: null, stops: [] })) }}
-              places={places} onSelectPlace={(placeId) => { onClose(); onSelectPlace(placeId); }} />
+              places={places} onSelectPlace={onSelectPlace} />
           </div>
         </div>
       </div>
     </div>
+    {/* Native place dialogs enter the top layer while remaining inside Bootstrap's focus boundary. */}
+    {children}
   </div>;
 }
