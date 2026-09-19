@@ -179,7 +179,7 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
     {!itineraryOpen && placeDetails}
     <form onSubmit={submit} className="composer border-top pt-3">
       <label className="visually-hidden" htmlFor="message">Message</label>
-      <div className="d-flex gap-2 align-items-end">
+      <div className="d-flex gap-2 align-items-stretch">
         <textarea id="message" ref={textarea} className="form-control" rows={2} placeholder="Message…" autoFocus
           value={input} maxLength={maxMessageLength} readOnly={busy || authExpired} aria-describedby="message-help"
           onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => {
