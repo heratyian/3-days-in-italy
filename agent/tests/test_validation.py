@@ -10,31 +10,70 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from italy_agent.models import Itinerary, ItineraryDay, ItineraryStop, ValidationResult
 from italy_agent.repository import PlaceRepository
-from italy_agent.tools import save_itinerary, validate_itinerary as validation_tool
+from italy_agent.tools import save_itinerary
+from italy_agent.tools import validate_itinerary as validation_tool
 from italy_agent.validation import validate_itinerary
 
 
 @pytest.fixture
 def repository(tmp_path, monkeypatch):
     records = [
-        {"id": name, "name": name, "hours": "09:00-18:00", "duration_minutes": 60,
-         "latitude": 43, "longitude": 11 + index / 100}
+        {
+            "id": name,
+            "name": name,
+            "hours": "09:00-18:00",
+            "duration_minutes": 60,
+            "latitude": 43,
+            "longitude": 11 + index / 100,
+        }
         for index, name in enumerate(["a", "b", "c", "d"])
     ]
-    records.extend([
-        {"id": "split", "name": "Split", "hours": "12:00-14:30, 19:00-22:30",
-         "latitude": 43, "longitude": 11, "duration_minutes": 60},
-        {"id": "night", "name": "Night", "hours": "8:00-01:00",
-         "latitude": 43, "longitude": 11, "duration_minutes": 30},
-        {"id": "unknown", "name": "Unknown"},
-        {"id": "weekly", "name": "Weekly", "hours": "Tues-Sun 09:00-18:00",
-         "latitude": 43, "longitude": 11, "duration_minutes": 60},
-        {"id": "seasonal", "name": "Seasonal", "hours": "09:00-18:00",
-         "seasonal_notes": "Open April-October only.", "latitude": 43, "longitude": 11,
-         "duration_minutes": 60},
-        {"id": "far", "name": "Far", "hours": "09:00-18:00",
-         "latitude": 46, "longitude": 11, "duration_minutes": 60},
-    ])
+    records.extend(
+        [
+            {
+                "id": "split",
+                "name": "Split",
+                "hours": "12:00-14:30, 19:00-22:30",
+                "latitude": 43,
+                "longitude": 11,
+                "duration_minutes": 60,
+            },
+            {
+                "id": "night",
+                "name": "Night",
+                "hours": "8:00-01:00",
+                "latitude": 43,
+                "longitude": 11,
+                "duration_minutes": 30,
+            },
+            {"id": "unknown", "name": "Unknown"},
+            {
+                "id": "weekly",
+                "name": "Weekly",
+                "hours": "Tues-Sun 09:00-18:00",
+                "latitude": 43,
+                "longitude": 11,
+                "duration_minutes": 60,
+            },
+            {
+                "id": "seasonal",
+                "name": "Seasonal",
+                "hours": "09:00-18:00",
+                "seasonal_notes": "Open April-October only.",
+                "latitude": 43,
+                "longitude": 11,
+                "duration_minutes": 60,
+            },
+            {
+                "id": "far",
+                "name": "Far",
+                "hours": "09:00-18:00",
+                "latitude": 46,
+                "longitude": 11,
+                "duration_minutes": 60,
+            },
+        ]
+    )
     path = tmp_path / "places.json"
     path.write_text(json.dumps(records))
     repository = PlaceRepository(path)
@@ -47,11 +86,13 @@ def stop(place_id="a", start="09:00", end="10:00"):
 
 
 def plan(*stops):
-    return Itinerary(days=[
-        ItineraryDay(day=1, stops=list(stops)),
-        ItineraryDay(day=2, stops=[stop("c")]),
-        ItineraryDay(day=3, stops=[stop("d")]),
-    ])
+    return Itinerary(
+        days=[
+            ItineraryDay(day=1, stops=list(stops)),
+            ItineraryDay(day=2, stops=[stop("c")]),
+            ItineraryDay(day=3, stops=[stop("d")]),
+        ]
+    )
 
 
 def codes(result):
@@ -59,8 +100,14 @@ def codes(result):
 
 
 def runtime(state):
-    return ToolRuntime(state=state, context=None, config={}, stream_writer=lambda value: None,
-                       tool_call_id="save", store=None)
+    return ToolRuntime(
+        state=state,
+        context=None,
+        config={},
+        stream_writer=lambda value: None,
+        tool_call_id="save",
+        store=None,
+    )
 
 
 def test_valid_schedule_and_boundaries(repository):
@@ -69,9 +116,18 @@ def test_valid_schedule_and_boundaries(repository):
     assert validate_itinerary(plan(stop("a", "17:00", "18:00")), repository).valid
 
 
-@pytest.mark.parametrize("days", [[], [{"day": 1, "stops": []}], [
-    {"day": 1, "stops": []}, {"day": 1, "stops": []}, {"day": 3, "stops": []},
-]])
+@pytest.mark.parametrize(
+    "days",
+    [
+        [],
+        [{"day": 1, "stops": []}],
+        [
+            {"day": 1, "stops": []},
+            {"day": 1, "stops": []},
+            {"day": 3, "stops": []},
+        ],
+    ],
+)
 def test_structural_errors_return_validation_issues(repository, days):
     result = validate_itinerary({"days": days}, repository)
     assert not result.valid
@@ -86,10 +142,17 @@ def test_unknown_and_duplicate_ids_have_location(repository):
     assert duplicate.day == 2 and duplicate.place_id == "c"
 
 
-@pytest.mark.parametrize(("start", "end"), [
-    ("bad", "10:00"), ("09:00", "25:00"), ("10:00", "09:00"),
-    ("09:00", "09:00"), ("24:00", "24:00"), ("23:00", "01:00"),
-])
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        ("bad", "10:00"),
+        ("09:00", "25:00"),
+        ("10:00", "09:00"),
+        ("09:00", "09:00"),
+        ("24:00", "24:00"),
+        ("23:00", "01:00"),
+    ],
+)
 def test_invalid_times_are_errors(repository, start, end):
     result = validate_itinerary(plan(stop(start=start, end=end)), repository)
     assert not result.valid
@@ -97,7 +160,9 @@ def test_invalid_times_are_errors(repository, start, end):
 
 
 def test_nested_overlap_is_detected_beyond_previous_stop(repository):
-    itinerary = plan(stop("a", "09:00", "13:00"), stop("b", "10:00", "11:00"), stop("split", "12:00", "13:00"))
+    itinerary = plan(
+        stop("a", "09:00", "13:00"), stop("b", "10:00", "11:00"), stop("split", "12:00", "13:00")
+    )
     result = validate_itinerary(itinerary, repository)
     overlaps = [issue for issue in result.issues if issue.code == "overlapping_stops"]
     assert len(overlaps) == 2
@@ -121,11 +186,17 @@ def test_short_visit_warns(repository):
     assert result.valid and codes(result) == {"short_visit"}
 
 
-@pytest.mark.parametrize(("start", "end", "valid"), [
-    ("12:00", "14:30", True), ("19:00", "22:30", True),
-    ("14:00", "19:30", False), ("15:00", "16:00", False),
-    ("11:30", "12:30", False), ("22:00", "23:00", False),
-])
+@pytest.mark.parametrize(
+    ("start", "end", "valid"),
+    [
+        ("12:00", "14:30", True),
+        ("19:00", "22:30", True),
+        ("14:00", "19:30", False),
+        ("15:00", "16:00", False),
+        ("11:30", "12:30", False),
+        ("22:00", "23:00", False),
+    ],
+)
 def test_visit_must_fit_inside_one_open_session(repository, start, end, valid):
     result = validate_itinerary(plan(stop("split", start, end)), repository)
     assert result.valid == valid
@@ -179,6 +250,7 @@ def test_graph_replans_after_rejection_and_checkpoints_validation(monkeypatch, r
     monkeypatch.setenv("LANGSMITH_TRACING", "false")
     monkeypatch.setenv("ITALY_AGENT_MODEL", "openai:gpt-5-mini")
     from italy_agent.graph import graph
+
     monkeypatch.setattr(graph, "checkpointer", InMemorySaver())
     invalid = plan(stop("a", "09:00", "11:00"), stop("b", "10:00", "12:00"))
     corrected = plan(stop(), stop("b", "10:00", "11:00"))
@@ -188,16 +260,30 @@ def test_graph_replans_after_rejection_and_checkpoints_validation(monkeypatch, r
         nonlocal calls
         calls += 1
         if calls == 1:
-            response = AIMessage(content="", tool_calls=[{
-                "id": "bad", "name": "save_itinerary", "args": invalid.model_dump(),
-            }])
+            response = AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "bad",
+                        "name": "save_itinerary",
+                        "args": invalid.model_dump(),
+                    }
+                ],
+            )
         elif calls == 2:
             assert messages[-1].status == "error"
             assert "overlapping_stops" in messages[-1].content
             assert "Itinerary: null" in messages[0].content
-            response = AIMessage(content="", tool_calls=[{
-                "id": "fixed", "name": "save_itinerary", "args": corrected.model_dump(),
-            }])
+            response = AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "fixed",
+                        "name": "save_itinerary",
+                        "args": corrected.model_dump(),
+                    }
+                ],
+            )
         else:
             saved = json.loads(messages[-1].content)
             assert saved["validation"] == {"valid": True, "issues": []}

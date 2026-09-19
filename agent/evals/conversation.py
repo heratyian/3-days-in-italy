@@ -16,7 +16,6 @@ from langchain_openai import ChatOpenAI
 from langsmith import Client
 from pydantic import BaseModel, Field
 
-
 JUDGE_PROMPT = """How well do the agent's recommendations match the user's requests?
 Evaluate each turn using the example's criteria, including interests, location,
 pace, exclusions, and follow-up changes. Earlier preferences still apply unless
@@ -49,15 +48,20 @@ def run_conversation(inputs: dict) -> dict:
     state = {"messages": []}
     turns = []
     for message in inputs["turns"]:
-        state = graph.invoke({
-            **state,
-            "messages": [*state["messages"], {"role": "user", "content": message}],
-        }, {"recursion_limit": 60})
+        state = graph.invoke(
+            {
+                **state,
+                "messages": [*state["messages"], {"role": "user", "content": message}],
+            },
+            {"recursion_limit": 60},
+        )
         itinerary = state["itinerary"]
-        turns.append({
-            "response": state["messages"][-1].content,
-            "itinerary": itinerary.model_dump() if itinerary is not None else None,
-        })
+        turns.append(
+            {
+                "response": state["messages"][-1].content,
+                "itinerary": itinerary.model_dump() if itinerary is not None else None,
+            }
+        )
     return {"turns": turns}
 
 
@@ -72,7 +76,9 @@ def main() -> None:
         client.create_examples(dataset_id=dataset.id, examples=examples)
 
     # Structured output gives LangSmith a numeric score and a readable explanation.
-    judge = ChatOpenAI(model="gpt-4.1-mini", temperature=0).with_structured_output(RecommendationScore)
+    judge = ChatOpenAI(model="gpt-4.1-mini", temperature=0).with_structured_output(
+        RecommendationScore
+    )
 
     def recommendation_match(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
         """LangSmith supplies the example inputs, agent result, and reference outputs.
@@ -80,14 +86,21 @@ def main() -> None:
         Reference outputs contain grading criteria, not an exact ideal itinerary.
         The judge sees every turn so it can check revisions and retained preferences.
         """
-        result = judge.invoke([
-            ("system", JUDGE_PROMPT),
-            ("human", json.dumps({
-                "user_requests": inputs["turns"],
-                "agent_turns": outputs["turns"],
-                "criteria": reference_outputs["criteria"],
-            })),
-        ])
+        result = judge.invoke(
+            [
+                ("system", JUDGE_PROMPT),
+                (
+                    "human",
+                    json.dumps(
+                        {
+                            "user_requests": inputs["turns"],
+                            "agent_turns": outputs["turns"],
+                            "criteria": reference_outputs["criteria"],
+                        }
+                    ),
+                ),
+            ]
+        )
         # The key becomes a comparison column; the comment explains each row's score.
         return {"key": "recommendation_match", "score": result.score, "comment": result.reasoning}
 

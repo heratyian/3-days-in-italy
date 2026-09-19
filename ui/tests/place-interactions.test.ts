@@ -23,24 +23,41 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
   };
   const previousWindow = globalThis.window;
   const previousDocument = globalThis.document;
-  Object.assign(globalThis, { window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true });
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.window.document,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  });
   // JSDOM has no top layer. Only emulate the native open/close methods; the
   // component's selection, effects, rendering, and event handlers run normally.
-  dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
-  dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
+  dom.window.HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  dom.window.HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
   function Conversation() {
     const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
     const { places, error, retry } = usePlaces(content);
-    return createElement("div", null,
+    return createElement(
+      "div",
+      null,
       createElement(Message, { human: false, content, places, onSelectPlace: setSelectedPlaceId }),
       error && createElement("button", { onClick: retry, id: "retry" }, error),
-      createElement(PlaceDetails, { place: selectedPlaceId ? places[selectedPlaceId] : undefined, onClose: () => setSelectedPlaceId(null) }),
+      createElement(PlaceDetails, {
+        place: selectedPlaceId ? places[selectedPlaceId] : undefined,
+        onClose: () => setSelectedPlaceId(null),
+      }),
     );
   }
   const root = createRoot(document.getElementById("root")!);
   try {
     await act(async () => root.render(createElement(Conversation)));
-    assert.deepEqual(requests.sort(), ["/api/places/place_002", "/api/places/place_010", "/api/places/place_999"]);
+    assert.deepEqual(requests.sort(), [
+      "/api/places/place_002",
+      "/api/places/place_010",
+      "/api/places/place_999",
+    ]);
     const dialog = document.querySelector("dialog")!;
     const references = document.querySelectorAll<HTMLButtonElement>(".place-reference");
     assert.equal(dialog.open, false);
@@ -48,7 +65,10 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
     assert.equal(dialog.open, true);
     assert.match(dialog.textContent!, /Vatican Museums/);
     assert.match(dialog.textContent!, /Booking required/);
-    assert.equal(new URL(dialog.querySelector("a")!.href).searchParams.get("query"), buildPlaceQuery(places.place_010));
+    assert.equal(
+      new URL(dialog.querySelector("a")!.href).searchParams.get("query"),
+      buildPlaceQuery(places.place_010),
+    );
     await act(async () => dialog.querySelector<HTMLButtonElement>("button")!.click());
     assert.equal(dialog.open, false);
     await act(async () => references[1].click());
@@ -56,7 +76,9 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
     assert.match(dialog.textContent!, /Booking not required/);
     assert.equal(document.querySelectorAll("dialog").length, 1);
     // Browsers dispatch cancel when Escape is pressed in a modal dialog.
-    await act(async () => { dialog.dispatchEvent(new dom.window.Event("cancel", { cancelable: true })); });
+    await act(async () => {
+      dialog.dispatchEvent(new dom.window.Event("cancel", { cancelable: true }));
+    });
     assert.equal(dialog.open, false);
     assert.equal(dialog.textContent, "");
     // JSDOM has no layout; supply sheet bounds to distinguish padding from backdrop.
@@ -65,13 +87,22 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
     await act(async () => dialog.querySelector("h2")!.click());
     assert.equal(dialog.open, true, "clicking content keeps the sheet open");
     await act(async () => {
-      dialog.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: 410, clientY: 110 }));
+      dialog.dispatchEvent(
+        new dom.window.MouseEvent("click", { bubbles: true, clientX: 410, clientY: 110 }),
+      );
     });
     assert.equal(dialog.open, true, "clicking sheet padding keeps it open");
-    for (const [clientX, clientY] of [[200, 200], [900, 200], [500, 50], [500, 750]]) {
+    for (const [clientX, clientY] of [
+      [200, 200],
+      [900, 200],
+      [500, 50],
+      [500, 750],
+    ]) {
       await act(async () => references[0].click());
       await act(async () => {
-        dialog.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX, clientY }));
+        dialog.dispatchEvent(
+          new dom.window.MouseEvent("click", { bubbles: true, clientX, clientY }),
+        );
       });
       assert.equal(dialog.open, false, "clicking outside closes the sheet");
       assert.equal(dialog.textContent, "");
@@ -91,6 +122,10 @@ test("selecting places updates one sheet; close, Escape, and outside clicks clea
     await act(async () => root.unmount());
     globalThis.fetch = previousFetch;
     dom.window.close();
-    Object.assign(globalThis, { window: previousWindow, document: previousDocument, IS_REACT_ACT_ENVIRONMENT: false });
+    Object.assign(globalThis, {
+      window: previousWindow,
+      document: previousDocument,
+      IS_REACT_ACT_ENVIRONMENT: false,
+    });
   }
 });

@@ -14,12 +14,17 @@ export function usePlaces(content: string, itineraryPlaceIds: string[] = []) {
 
   useEffect(() => {
     const missing = referenceIds.split(",").filter((id) => id && !Object.hasOwn(places, id));
-    if (!missing.length) { setError(""); return; }
+    if (!missing.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clear errors from the previous external lookup when the requested places change.
+      setError("");
+      return;
+    }
     const controller = new AbortController();
     setError("");
     Promise.all(missing.map(async (id) => [id, await getPlace(id, controller.signal)] as const))
       .then((entries) => {
-        if (!controller.signal.aborted) setPlaces((current) => ({ ...current, ...Object.fromEntries(entries) }));
+        if (!controller.signal.aborted)
+          setPlaces((current) => ({ ...current, ...Object.fromEntries(entries) }));
       })
       .catch((error: Error) => {
         if (!controller.signal.aborted) setError(error.message);

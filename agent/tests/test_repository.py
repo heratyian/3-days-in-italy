@@ -11,17 +11,34 @@ from italy_agent.repository import DEFAULT_DATA_PATH, PlaceRepository
 def repository(tmp_path):
     records = [
         {
-            "id": "wine", "name": "Wine Garden", "city": "Florence", "region": "Tuscany",
-            "type": "restaurant", "tags": ["wine", "local_favorite"],
-            "description": "A quiet garden", "rating": 4.5, "price_range": "€€",
+            "id": "wine",
+            "name": "Wine Garden",
+            "city": "Florence",
+            "region": "Tuscany",
+            "type": "restaurant",
+            "tags": ["wine", "local_favorite"],
+            "description": "A quiet garden",
+            "rating": 4.5,
+            "price_range": "€€",
         },
         {
-            "id": "museum", "name": "Museum", "city": "Rome", "region": "Lazio",
-            "type": "museum", "tags": ["art"], "rating": 4.9, "price_range": "€",
+            "id": "museum",
+            "name": "Museum",
+            "city": "Rome",
+            "region": "Lazio",
+            "type": "museum",
+            "tags": ["art"],
+            "rating": 4.9,
+            "price_range": "€",
         },
         {
-            "id": "dinner", "name": "Wine Dinner", "city": "Florence", "region": "Tuscany",
-            "type": "restaurant", "tags": ["wine", "food"], "rating": 4.8,
+            "id": "dinner",
+            "name": "Wine Dinner",
+            "city": "Florence",
+            "region": "Tuscany",
+            "type": "restaurant",
+            "tags": ["wine", "food"],
+            "rating": 4.8,
             "price_range": "€€€€",
         },
         {"id": "unknown", "name": "Unknown", "tags": ["wine"]},
@@ -51,8 +68,12 @@ def test_loads_supplied_dataset():
 
 def test_normalization_preserves_uncertainty_without_mutating_source():
     record = {
-        "id": "seasonal", "name": " Seasonal visit ", "tags": ["Local Favorite", "local_favorite"],
-        "hours": "Morning only", "duration_minutes": None, "seasonal_notes": "October only",
+        "id": "seasonal",
+        "name": " Seasonal visit ",
+        "tags": ["Local Favorite", "local_favorite"],
+        "hours": "Morning only",
+        "duration_minutes": None,
+        "seasonal_notes": "October only",
         "booking_required": None,
     }
     place = Place.model_validate(record)
@@ -89,9 +110,14 @@ def test_repairs_mixed_unicode_and_garbled_text():
 
 
 def test_normalized_fields_survive_serialization():
-    place = Place.model_validate({
-        "id": "visit", "name": "Visit", "duration_minutes": 90, "hours": "Morning only",
-    })
+    place = Place.model_validate(
+        {
+            "id": "visit",
+            "name": "Visit",
+            "duration_minutes": 90,
+            "hours": "Morning only",
+        }
+    )
     restored = Place.model_validate(place.model_dump())
     assert restored.typical_duration_minutes == 90
     assert restored.opening_hours == "Morning only"
@@ -99,8 +125,12 @@ def test_normalized_fields_survive_serialization():
 
 def test_combines_filters(repository):
     result = repository.search(
-        cities=[" FLORENCE "], regions=["tuscany"], types=["Restaurant"],
-        tags=["local favorite"], max_price="€€", min_rating=4.5,
+        cities=[" FLORENCE "],
+        regions=["tuscany"],
+        types=["Restaurant"],
+        tags=["local favorite"],
+        max_price="€€",
+        min_rating=4.5,
     )
     assert [place.id for place in result] == ["wine"]
     assert repository.search(cities=["Rome"], tags=["wine"]) == []
@@ -108,7 +138,10 @@ def test_combines_filters(repository):
 
 def test_multiple_filter_values_are_alternatives(repository):
     assert {place.id for place in repository.search(tags=["wine", "art"])} == {
-        "wine", "dinner", "museum", "unknown",
+        "wine",
+        "dinner",
+        "museum",
+        "unknown",
     }
     assert len(repository.search(cities=["Rome", "Florence"])) == 3
 
@@ -120,7 +153,9 @@ def test_price_and_rating_exclude_unknown_values(repository):
 
 def test_query_ranks_relevance_before_rating(repository):
     assert [place.id for place in repository.search(query="WINE garden")] == [
-        "wine", "dinner", "unknown",
+        "wine",
+        "dinner",
+        "unknown",
     ]
     assert repository.search(query="nonexistent") == []
     assert [place.id for place in repository.search(query="local_favorite")] == ["wine"]
@@ -134,9 +169,15 @@ def test_stable_order_limits_and_empty_filters(repository):
     assert repository.search(limit=0) == []
 
 
-@pytest.mark.parametrize("arguments", [
-    {"limit": -1}, {"max_price": "cheap"}, {"min_rating": 6}, {"min_rating": -1},
-])
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"limit": -1},
+        {"max_price": "cheap"},
+        {"min_rating": 6},
+        {"min_rating": -1},
+    ],
+)
 def test_invalid_search_arguments(repository, arguments):
     with pytest.raises(ValueError):
         repository.search(**arguments)
@@ -156,13 +197,16 @@ def test_callers_cannot_mutate_authoritative_records(repository):
     assert repository.get(result[0].id).name != "Changed"
 
 
-@pytest.mark.parametrize(("records", "location"), [
-    ({"places": []}, ()),
-    ([None], (0,)),
-    ([{"name": "Missing ID"}], (0, "id")),
-    ([{"id": "bad", "name": "Bad coordinates", "latitude": 100}], (0, "latitude")),
-    ([{"id": "bad", "name": "Bad tags", "tags": "wine"}], (0, "tags")),
-])
+@pytest.mark.parametrize(
+    ("records", "location"),
+    [
+        ({"places": []}, ()),
+        ([None], (0,)),
+        ([{"name": "Missing ID"}], (0, "id")),
+        ([{"id": "bad", "name": "Bad coordinates", "latitude": 100}], (0, "latitude")),
+        ([{"id": "bad", "name": "Bad tags", "tags": "wine"}], (0, "tags")),
+    ],
+)
 def test_invalid_dataset_identifies_invalid_record_and_field(tmp_path, records, location):
     path = tmp_path / "invalid.json"
     path.write_text(json.dumps(records), encoding="utf-8")
@@ -173,9 +217,15 @@ def test_invalid_dataset_identifies_invalid_record_and_field(tmp_path, records, 
 
 def test_duplicate_ids_fail_with_context(tmp_path):
     path = tmp_path / "duplicates.json"
-    path.write_text(json.dumps([
-        {"id": "same", "name": "One"}, {"id": "same", "name": "Two"},
-    ]), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            [
+                {"id": "same", "name": "One"},
+                {"id": "same", "name": "Two"},
+            ]
+        ),
+        encoding="utf-8",
+    )
     with pytest.raises(ValueError, match="duplicate place ID 'same'"):
         PlaceRepository(path)
 

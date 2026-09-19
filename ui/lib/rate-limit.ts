@@ -19,6 +19,7 @@ export function allowRequest(key: string, limit: number, duration = 60_000): boo
 export function positiveInteger(value: string | undefined, fallback: number): number {
   if (value === undefined || value === "") return fallback;
   const number = Number(value);
-  if (!Number.isSafeInteger(number) || number < 1) throw new Error("Usage limits must be positive integers.");
+  if (!Number.isSafeInteger(number) || number < 1)
+    throw new Error("Usage limits must be positive integers.");
   return number;
 }

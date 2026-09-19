@@ -13,7 +13,6 @@ from pydantic import TypeAdapter
 from italy_agent.geography import calculate_distance_between_places
 from italy_agent.models import NearbyPlace, Place, normalize_label
 
-
 DEFAULT_DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "italy.json"
 PRICE_LEVELS = {"€": 1, "€€": 2, "€€€": 3, "€€€€": 4}
 
@@ -81,32 +80,31 @@ class PlaceRepository:
         if cities:
             requested_cities = {normalize_label(city) for city in cities}
             places = [
-                place for place in places
-                if normalize_label(place.city or "") in requested_cities
+                place for place in places if normalize_label(place.city or "") in requested_cities
             ]
         if regions:
             requested_regions = {normalize_label(region) for region in regions}
             places = [
-                place for place in places
+                place
+                for place in places
                 if normalize_label(place.region or "") in requested_regions
             ]
         if types:
             requested_types = {normalize_label(place_type) for place_type in types}
             places = [
-                place for place in places
-                if normalize_label(place.type or "") in requested_types
+                place for place in places if normalize_label(place.type or "") in requested_types
             ]
         if tags:
             requested_tags = {normalize_label(tag) for tag in tags}
             places = [place for place in places if requested_tags.intersection(place.tags)]
         if min_rating is not None:
             places = [
-                place for place in places
-                if place.rating is not None and place.rating >= min_rating
+                place for place in places if place.rating is not None and place.rating >= min_rating
             ]
         if max_price is not None:
             places = [
-                place for place in places
+                place
+                for place in places
                 if place.price_range in PRICE_LEVELS
                 and PRICE_LEVELS[place.price_range] <= PRICE_LEVELS[max_price]
             ]
@@ -114,19 +112,30 @@ class PlaceRepository:
         terms = set(re.findall(r"\w+", normalize_label(query or "")))
         matches: list[tuple[int, Place]] = []
         for place in places:
-            searchable_text = " ".join([
-                place.name, place.description or "", place.type or "",
-                place.city or "", place.region or "", place.neighborhood or "", *place.tags,
-            ])
+            searchable_text = " ".join(
+                [
+                    place.name,
+                    place.description or "",
+                    place.type or "",
+                    place.city or "",
+                    place.region or "",
+                    place.neighborhood or "",
+                    *place.tags,
+                ]
+            )
             words = set(re.findall(r"\w+", normalize_label(searchable_text)))
             relevance = len(terms & words)
             if terms and not relevance:
                 continue
             matches.append((relevance, place))
 
-        matches.sort(key=lambda match: (
-            -match[0], -(match[1].rating if match[1].rating is not None else -1), match[1].id,
-        ))
+        matches.sort(
+            key=lambda match: (
+                -match[0],
+                -(match[1].rating if match[1].rating is not None else -1),
+                match[1].id,
+            )
+        )
         return [place.model_copy(deep=True) for _, place in matches[:limit]]
 
     def nearby(
@@ -156,7 +165,11 @@ class PlaceRepository:
         candidates = self.search(tags=tags, types=types, limit=len(self._places))
         nearby_places = []
         for candidate in candidates:
-            if candidate.id == place_id or candidate.latitude is None or candidate.longitude is None:
+            if (
+                candidate.id == place_id
+                or candidate.latitude is None
+                or candidate.longitude is None
+            ):
                 continue
             distance_km = calculate_distance_between_places(origin, candidate)
             if radius_km is None or distance_km <= radius_km:

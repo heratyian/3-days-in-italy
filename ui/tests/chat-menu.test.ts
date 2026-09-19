@@ -5,16 +5,27 @@ import { act, createElement } from "react";
 import ChatMenu from "../app/components/ChatMenu";
 
 test("chat settings dismiss on outside click, Escape, and actions", async () => {
-  const dom = new JSDOM('<div id="root"></div><button id="outside">Outside</button>', { url: "http://localhost" });
+  const dom = new JSDOM('<div id="root"></div><button id="outside">Outside</button>', {
+    url: "http://localhost",
+  });
   const previous = {
-    window: globalThis.window, document: globalThis.document, Element: globalThis.Element,
-    HTMLElement: globalThis.HTMLElement, Node: globalThis.Node, Event: globalThis.Event,
+    window: globalThis.window,
+    document: globalThis.document,
+    Element: globalThis.Element,
+    HTMLElement: globalThis.HTMLElement,
+    Node: globalThis.Node,
+    Event: globalThis.Event,
     getComputedStyle: globalThis.getComputedStyle,
   };
   Object.assign(globalThis, {
-    window: dom.window, document: dom.window.document, Element: dom.window.Element,
-    HTMLElement: dom.window.HTMLElement, Node: dom.window.Node, Event: dom.window.Event,
-    getComputedStyle: dom.window.getComputedStyle.bind(dom.window), IS_REACT_ACT_ENVIRONMENT: true,
+    window: dom.window,
+    document: dom.window.document,
+    Element: dom.window.Element,
+    HTMLElement: dom.window.HTMLElement,
+    Node: dom.window.Node,
+    Event: dom.window.Event,
+    getComputedStyle: dom.window.getComputedStyle.bind(dom.window),
+    IS_REACT_ACT_ENVIRONMENT: true,
   });
   const { createRoot } = await import("react-dom/client");
   await import("bootstrap/js/dist/dropdown");
@@ -22,9 +33,19 @@ test("chat settings dismiss on outside click, Escape, and actions", async () => 
   let restarts = 0;
   let signOuts = 0;
   async function render(busy = false) {
-    await act(async () => root.render(createElement(ChatMenu, {
-      busy, onRestart: () => { restarts++; }, onSignOut: () => { signOuts++; },
-    })));
+    await act(async () =>
+      root.render(
+        createElement(ChatMenu, {
+          busy,
+          onRestart: () => {
+            restarts++;
+          },
+          onSignOut: () => {
+            signOuts++;
+          },
+        }),
+      ),
+    );
   }
   try {
     await render();
@@ -38,7 +59,11 @@ test("chat settings dismiss on outside click, Escape, and actions", async () => 
     await click(document.getElementById("outside")!);
     assert.equal(toggle.getAttribute("aria-expanded"), "false");
     await click(toggle);
-    await act(async () => { toggle.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+    await act(async () => {
+      toggle.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
     assert.equal(toggle.getAttribute("aria-expanded"), "false");
     assert.equal(document.activeElement, toggle);
     await click(toggle);

@@ -8,7 +8,11 @@ import { hasNewAssistantText } from "../lib/messages";
 test("loading timer starts fresh for the next reply without extra waiting messages", async (context) => {
   const dom = new JSDOM('<div id="root"></div>');
   const previous = { window: globalThis.window, document: globalThis.document };
-  Object.assign(globalThis, { window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true });
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.window.document,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  });
   context.mock.timers.enable({ apis: ["setInterval", "Date"], now: 0 });
   const { createRoot } = await import("react-dom/client");
   const container = document.getElementById("root")!;
@@ -40,10 +44,28 @@ test("loading timer starts fresh for the next reply without extra waiting messag
 test("only new assistant text hides progress, including when retrying a partial reply", () => {
   const previous = [{ id: "old", type: "ai", content: "Previous reply" }];
   assert.equal(hasNewAssistantText(previous, previous), false);
-  assert.equal(hasNewAssistantText([...previous, { type: "human", content: "Next question" }], previous), false);
-  assert.equal(hasNewAssistantText([...previous, { type: "tool", content: "Found places" }], previous), false);
+  assert.equal(
+    hasNewAssistantText([...previous, { type: "human", content: "Next question" }], previous),
+    false,
+  );
+  assert.equal(
+    hasNewAssistantText([...previous, { type: "tool", content: "Found places" }], previous),
+    false,
+  );
   assert.equal(hasNewAssistantText([...previous, { type: "ai", content: " " }], previous), false);
-  assert.equal(hasNewAssistantText([...previous, { id: "new", type: "AIMessageChunk", content: "H" }], previous), true);
-  assert.equal(hasNewAssistantText([{ id: "old", type: "ai", content: "Previous reply continued" }], previous), true);
-  assert.equal(hasNewAssistantText([{ type: "ai", content: [{ type: "text", text: "Hello" }] }], []), true);
+  assert.equal(
+    hasNewAssistantText(
+      [...previous, { id: "new", type: "AIMessageChunk", content: "H" }],
+      previous,
+    ),
+    true,
+  );
+  assert.equal(
+    hasNewAssistantText([{ id: "old", type: "ai", content: "Previous reply continued" }], previous),
+    true,
+  );
+  assert.equal(
+    hasNewAssistantText([{ type: "ai", content: [{ type: "text", text: "Hello" }] }], []),
+    true,
+  );
 });

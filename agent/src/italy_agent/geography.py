@@ -20,8 +20,7 @@ def calculate_distance_between_places(origin: Place, destination: Place) -> floa
     longitude_difference = radians(destination.longitude - origin.longitude)
     haversine = (
         sin(latitude_difference / 2) ** 2
-        + cos(origin_latitude) * cos(destination_latitude)
-        * sin(longitude_difference / 2) ** 2
+        + cos(origin_latitude) * cos(destination_latitude) * sin(longitude_difference / 2) ** 2
     )
     # Floating-point rounding can push antipodal points just beyond 1.
     return 2 * 6371.0088 * asin(sqrt(min(1.0, max(0.0, haversine))))

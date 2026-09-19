@@ -14,7 +14,8 @@ type Context = { params: Promise<{ path: string[] }> };
 async function handle(request: Request, context: Context) {
   const session = readSession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session) return errorResponse("Sign in to continue.", 401);
-  if (request.method === "POST" && !sameOrigin(request)) return errorResponse("Request not allowed.", 403);
+  if (request.method === "POST" && !sameOrigin(request))
+    return errorResponse("Request not allowed.", 403);
   const { path } = await context.params;
   const route = path.join("/");
   const create = route === "threads" && request.method === "POST";
@@ -25,21 +26,34 @@ async function handle(request: Request, context: Context) {
   try {
     const client = langgraphClient();
     if (create) {
-      if (!allowRequest(`threads:${session.id}`, 20)) return errorResponse("Please wait a minute before starting another conversation.", 429);
+      if (!allowRequest(`threads:${session.id}`, 20))
+        return errorResponse("Please wait a minute before starting another conversation.", 429);
       const thread = await client.threads.create({ metadata: { testing_session: session.id } });
-      return Response.json({ thread_id: thread.thread_id }, { headers: { "Cache-Control": "no-store" } });
+      return Response.json(
+        { thread_id: thread.thread_id },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const threadId = path[1];
     const thread = await client.threads.get(threadId);
-    if (thread.metadata?.testing_session !== session.id) return errorResponse("Conversation not found.", 404);
+    if (thread.metadata?.testing_session !== session.id)
+      return errorResponse("Conversation not found.", 404);
 
     if (state) {
       const saved = await client.threads.getState(threadId);
       // The hook only needs the current checkpoint, visible messages, and saved routes, not graph internals.
-      return Response.json({ values: publicValues(saved.values), checkpoint: saved.checkpoint,
-        next: [], tasks: [], created_at: saved.created_at, parent_checkpoint: null,
-      }, { headers: { "Cache-Control": "no-store" } });
+      return Response.json(
+        {
+          values: publicValues(saved.values),
+          checkpoint: saved.checkpoint,
+          next: [],
+          tasks: [],
+          created_at: saved.created_at,
+          parent_checkpoint: null,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const maxLength = positiveInteger(process.env.MAX_MESSAGE_LENGTH, 10000);
@@ -49,7 +63,9 @@ async function handle(request: Request, context: Context) {
     } catch {
       return errorResponse(`Send one nonempty message of at most ${maxLength} characters.`, 400);
     }
-    if (!allowRequest(`runs:${session.id}`, positiveInteger(process.env.RATE_LIMIT_PER_MINUTE, 20))) {
+    if (
+      !allowRequest(`runs:${session.id}`, positiveInteger(process.env.RATE_LIMIT_PER_MINUTE, 20))
+    ) {
       return errorResponse("Message limit reached. Try again in a minute.", 429);
     }
     if (!allowRequest(`duplicate:${session.id}:${message.id}`, 1, 3000)) {
@@ -82,11 +98,16 @@ async function handle(request: Request, context: Context) {
             }
             if (event === "error") {
               console.error("LangGraph run failed", data);
-              safeData = { error: "AgentExecutionError", message: "The assistant could not complete its response." };
+              safeData = {
+                error: "AgentExecutionError",
+                message: "The assistant could not complete its response.",
+              };
             }
             // SDK handles upstream streaming; this boundary forwards only public chat events.
             if (safeData !== undefined) {
-              controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(safeData)}\n\n`));
+              controller.enqueue(
+                encoder.encode(`event: ${event}\ndata: ${JSON.stringify(safeData)}\n\n`),
+              );
               next = await events.next();
               return;
             }
@@ -96,21 +117,34 @@ async function handle(request: Request, context: Context) {
         } catch (error) {
           console.error("LangGraph stream failed", error);
           if (!abort.signal.aborted && !request.signal.aborted) {
-            controller.enqueue(encoder.encode('event: error\ndata: {"error":"ConnectionError","message":"The connection was interrupted."}\n\n'));
+            controller.enqueue(
+              encoder.encode(
+                'event: error\ndata: {"error":"ConnectionError","message":"The connection was interrupted."}\n\n',
+              ),
+            );
             controller.close();
           }
         }
       },
-      async cancel() { abort.abort(); await events.return(undefined); },
+      async cancel() {
+        abort.abort();
+        await events.return(undefined);
+      },
     });
-    return new Response(body, { headers: {
-      "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no",
-    } });
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (error) {
     console.error("LangGraph request failed", error);
     const status = (error as { status?: number }).status;
-    if (status === 404) return errorResponse("Conversation not found. Start a new conversation.", 404);
-    if (status === 409) return errorResponse("The assistant is already responding. Please wait.", 409);
+    if (status === 404)
+      return errorResponse("Conversation not found. Start a new conversation.", 404);
+    if (status === 409)
+      return errorResponse("The assistant is already responding. Please wait.", 409);
     return errorResponse("Unable to connect to the assistant. Please try again.", 502);
   }
 }

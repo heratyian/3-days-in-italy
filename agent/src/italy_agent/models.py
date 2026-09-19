@@ -34,12 +34,14 @@ class Place(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     typical_duration_minutes: int | None = Field(
-        default=None, gt=0,
+        default=None,
+        gt=0,
         validation_alias=AliasChoices("typical_duration_minutes", "duration_minutes"),
     )
     # The supplied hours are free text; parsing them belongs to validation.
     opening_hours: str | None = Field(
-        default=None, validation_alias=AliasChoices("opening_hours", "hours"),
+        default=None,
+        validation_alias=AliasChoices("opening_hours", "hours"),
     )
     seasonal_notes: str | None = None
     booking_required: bool | None = None

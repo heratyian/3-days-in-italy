@@ -35,11 +35,20 @@ export function getDayRouteMapUrl(places: Place[], provider: MapProvider): strin
   if (provider === "apple") {
     // Use driving for Apple because walking routes do not reliably retain all stops.
     // https://developer.apple.com/documentation/mapkit/unified-map-urls
-    const params = new URLSearchParams({ source: locations[0], destination: locations.at(-1)!, mode: "driving" });
+    const params = new URLSearchParams({
+      source: locations[0],
+      destination: locations.at(-1)!,
+      mode: "driving",
+    });
     for (const location of locations.slice(1, -1)) params.append("waypoint", location);
     url = `https://maps.apple.com/directions?${params}`;
   } else {
-    const params = new URLSearchParams({ api: "1", origin: locations[0], destination: locations.at(-1)!, travelmode: "walking" });
+    const params = new URLSearchParams({
+      api: "1",
+      origin: locations[0],
+      destination: locations.at(-1)!,
+      travelmode: "walking",
+    });
     if (locations.length > 2) params.set("waypoints", locations.slice(1, -1).join("|"));
     url = `https://www.google.com/maps/dir/?${params}`;
   }
@@ -65,14 +74,26 @@ export function getPreferredMapProvider(): MapProvider {
   try {
     const saved = window.localStorage.getItem(PREFERENCE_KEY);
     if (saved === "apple" || saved === "google") return saved;
-  } catch { /* Private browsing may disable storage. */ }
+  } catch {
+    /* Private browsing may disable storage. */
+  }
   try {
-    if (/iPhone|iPad|iPod|Macintosh|MacIntel/i.test(`${window.navigator.userAgent} ${window.navigator.platform}`)) return "apple";
-  } catch { /* Google remains the fallback when platform detection is unavailable. */ }
+    if (
+      /iPhone|iPad|iPod|Macintosh|MacIntel/i.test(
+        `${window.navigator.userAgent} ${window.navigator.platform}`,
+      )
+    )
+      return "apple";
+  } catch {
+    /* Google remains the fallback when platform detection is unavailable. */
+  }
   return "google";
 }
 
 export function setPreferredMapProvider(provider: MapProvider): void {
-  try { window.localStorage.setItem(PREFERENCE_KEY, provider); }
-  catch { /* The in-memory preference still works. */ }
+  try {
+    window.localStorage.setItem(PREFERENCE_KEY, provider);
+  } catch {
+    /* The in-memory preference still works. */
+  }
 }

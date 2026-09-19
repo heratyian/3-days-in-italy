@@ -22,15 +22,24 @@ export type Place = {
 export async function getPlace(placeId: string, signal?: AbortSignal): Promise<Place | undefined> {
   const response = await fetch(`/api/places/${encodeURIComponent(placeId)}`, { signal });
   if (response.status === 404) return undefined;
-  if (!response.ok) throw new Error(response.status === 401
-    ? "Sign in again to load place details."
-    : "Unable to load place details. Please try again.");
+  if (!response.ok)
+    throw new Error(
+      response.status === 401
+        ? "Sign in again to load place details."
+        : "Unable to load place details. Please try again.",
+    );
   return response.json();
 }
 
 const icons: Record<string, string> = {
-  museum: "🏛️", historic_site: "🏛️", restaurant: "🍝", market: "🍝",
-  cafe: "🍝", park: "🌳", neighborhood: "🏘️", viewpoint: "👀",
+  museum: "🏛️",
+  historic_site: "🏛️",
+  restaurant: "🍝",
+  market: "🍝",
+  cafe: "🍝",
+  park: "🌳",
+  neighborhood: "🏘️",
+  viewpoint: "👀",
 };
 
 export function getPlaceIcon(place: Place): string | undefined {

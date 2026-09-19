@@ -1,6 +1,7 @@
 """Conservative parsing of the daily hour formats present in the dataset."""
 
 import re
+from itertools import pairwise
 
 
 def parse_itinerary_time(value: str) -> int:
@@ -77,6 +78,6 @@ def parse_daily_opening_hours(hours: str | None) -> list[tuple[int, int]] | None
             if end:
                 intervals.append((0, end))
     intervals.sort()
-    if any(end > next_start for (_, end), (next_start, _) in zip(intervals, intervals[1:])):
+    if any(end > next_start for (_, end), (next_start, _) in pairwise(intervals)):
         return None
     return intervals

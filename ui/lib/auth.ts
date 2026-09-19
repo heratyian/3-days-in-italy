@@ -15,11 +15,16 @@ function signature(payload: string): string {
 }
 
 export function equalSecrets(left: string, right: string): boolean {
-  return timingSafeEqual(createHash("sha256").update(left).digest(), createHash("sha256").update(right).digest());
+  return timingSafeEqual(
+    createHash("sha256").update(left).digest(),
+    createHash("sha256").update(right).digest(),
+  );
 }
 
 export function createSession(): string {
-  const payload = Buffer.from(JSON.stringify({ id: randomUUID(), expires: Date.now() + SESSION_LIFETIME })).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({ id: randomUUID(), expires: Date.now() + SESSION_LIFETIME }),
+  ).toString("base64url");
   return `${payload}.${signature(payload)}`;
 }
 
@@ -29,8 +34,11 @@ export function readSession(token: string | undefined): Session | null {
   if (!payload || !signed || extra || !equalSecrets(signed, signature(payload))) return null;
   try {
     const session = JSON.parse(Buffer.from(payload, "base64url").toString());
-    return typeof session.id === "string" && typeof session.expires === "number" && session.expires > Date.now()
-      ? session : null;
+    return typeof session.id === "string" &&
+      typeof session.expires === "number" &&
+      session.expires > Date.now()
+      ? session
+      : null;
   } catch {
     return null;
   }

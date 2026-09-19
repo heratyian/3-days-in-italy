@@ -14,11 +14,15 @@ async def get_place(request: Request) -> JSONResponse:
     """Return the same normalized record used by the agent, or 404."""
     place_id = request.path_params["place_id"]
     if not re.fullmatch(r"place_\d+", place_id):
-        return JSONResponse({"code": "place_not_found", "error": "Place not found."}, status_code=404)
+        return JSONResponse(
+            {"code": "place_not_found", "error": "Place not found."}, status_code=404
+        )
     try:
         place = repository.get(place_id)
     except KeyError:
-        return JSONResponse({"code": "place_not_found", "error": "Place not found."}, status_code=404)
+        return JSONResponse(
+            {"code": "place_not_found", "error": "Place not found."}, status_code=404
+        )
     return JSONResponse(place.model_dump(), headers={"Cache-Control": "no-store"})
 
 

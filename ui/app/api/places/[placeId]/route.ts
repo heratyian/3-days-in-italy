@@ -21,7 +21,9 @@ export async function GET(request: Request, context: { params: Promise<{ placeId
       const body = await response.json();
       if (body.code === "place_not_found") return errorResponse("Place not found.", 404);
       // A missing backend route is a service failure, not a missing dataset record.
-      throw new Error("The agent's place endpoint is unavailable. Restart the agent to load its route configuration.");
+      throw new Error(
+        "The agent's place endpoint is unavailable. Restart the agent to load its route configuration.",
+      );
     }
     if (!response.ok) throw new Error(`Place lookup returned ${response.status}`);
     return Response.json(await response.json(), { headers: { "Cache-Control": "no-store" } });

@@ -2,7 +2,8 @@ import "server-only";
 import { Client } from "@langchain/langgraph-sdk";
 
 export function langgraphClient() {
-  if (!process.env.LANGGRAPH_ASSISTANT_ID) throw new Error("LangGraph assistant must be configured.");
+  if (!process.env.LANGGRAPH_ASSISTANT_ID)
+    throw new Error("LangGraph assistant must be configured.");
   return new Client({
     apiUrl: getLangGraphApiUrl(),
     apiKey: process.env.LANGGRAPH_API_KEY || undefined,
@@ -20,7 +21,5 @@ export function getLangGraphApiUrl(): string {
     return `http://${process.env.LANGGRAPH_HOSTPORT}`;
   }
 
-  throw new Error(
-    "LANGGRAPH_API_URL or LANGGRAPH_HOSTPORT must be configured",
-  );
+  throw new Error("LANGGRAPH_API_URL or LANGGRAPH_HOSTPORT must be configured");
 }

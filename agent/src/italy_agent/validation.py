@@ -10,7 +10,9 @@ from italy_agent.models import Itinerary, ValidationIssue, ValidationResult
 from italy_agent.repository import PlaceRepository
 
 
-def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository) -> ValidationResult:
+def validate_itinerary(
+    itinerary: Itinerary | dict, repository: PlaceRepository
+) -> ValidationResult:
     """Check structure, IDs, duplicate visits, scheduling, hours, and geography.
 
     Each place may appear once per trip. Visits must start and end on the same
@@ -29,9 +31,16 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
     try:
         itinerary = Itinerary.model_validate(itinerary)
     except ValidationError as error:
-        return ValidationResult(valid=False, issues=[ValidationIssue(
-            severity="error", code="invalid_structure", message=str(error),
-        )])
+        return ValidationResult(
+            valid=False,
+            issues=[
+                ValidationIssue(
+                    severity="error",
+                    code="invalid_structure",
+                    message=str(error),
+                )
+            ],
+        )
 
     issues = []
     seen_place_ids = set()
@@ -40,15 +49,29 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
     for day in itinerary.days:
         scheduled_visits = []
         for stop in day.stops:
-            def report(severity: Literal["error", "warning"], code: str, message: str) -> None:
-                issues.append(ValidationIssue(
-                    severity=severity, code=code, message=message,
-                    day=day.day, place_id=stop.place_id,
-                ))
+
+            def report(
+                severity: Literal["error", "warning"],
+                code: str,
+                message: str,
+                *,
+                day_number: int = day.day,
+                place_id: str = stop.place_id,
+            ) -> None:
+                issues.append(
+                    ValidationIssue(
+                        severity=severity,
+                        code=code,
+                        message=message,
+                        day=day_number,
+                        place_id=place_id,
+                    )
+                )
 
             if stop.place_id in seen_place_ids:
                 report(
-                    "error", "duplicate_stop",
+                    "error",
+                    "duplicate_stop",
                     f"Place {stop.place_id} appears more than once in the trip.",
                 )
             seen_place_ids.add(stop.place_id)
@@ -60,7 +83,8 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
                 visit_interval = None
             if stop.start_time is None or stop.end_time is None:
                 report(
-                    "warning", "missing_schedule",
+                    "warning",
+                    "missing_schedule",
                     "Start/end times are incomplete; scheduling and visit length cannot be fully checked.",
                 )
             if visit_interval is not None:
@@ -68,7 +92,8 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
                 for other_start, other_end, other_id in scheduled_visits:
                     if start < other_end and end > other_start:
                         report(
-                            "error", "overlapping_stops",
+                            "error",
+                            "overlapping_stops",
                             f"Visit overlaps {other_id} on day {day.day}.",
                         )
                 if scheduled_visits and start < scheduled_visits[-1][0]:
@@ -88,7 +113,8 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
                 start, end = visit_interval
                 if end - start < place.typical_duration_minutes:
                     report(
-                        "warning", "short_visit",
+                        "warning",
+                        "short_visit",
                         f"Scheduled {end - start} minutes; typical visit is "
                         f"{place.typical_duration_minutes} minutes.",
                     )
@@ -96,26 +122,35 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
             intervals = parse_daily_opening_hours(place.opening_hours)
             if intervals is None:
                 report(
-                    "warning", "uncertain_hours",
+                    "warning",
+                    "uncertain_hours",
                     "Opening hours cannot be verified without clearer hours or a date: "
                     f"{place.opening_hours or 'not supplied'}.",
                 )
             if place.seasonal_notes:
-                report("warning", "seasonal_notes", f"Confirm source conditions: {place.seasonal_notes}")
+                report(
+                    "warning",
+                    "seasonal_notes",
+                    f"Confirm source conditions: {place.seasonal_notes}",
+                )
             if intervals is not None and visit_interval is not None:
                 start, end = visit_interval
                 if not any(opening <= start and end <= closing for opening, closing in intervals):
                     message = f"Visit does not fit within source hours ({place.opening_hours})."
                     if place.seasonal_notes:
-                        message += " Seasonal notes may qualify these hours; confirm before visiting."
+                        message += (
+                            " Seasonal notes may qualify these hours; confirm before visiting."
+                        )
                     report(
                         "warning" if place.seasonal_notes else "error",
-                        "outside_opening_hours", message,
+                        "outside_opening_hours",
+                        message,
                     )
 
             if place.latitude is None or place.longitude is None:
                 report(
-                    "warning", "missing_coordinates",
+                    "warning",
+                    "missing_coordinates",
                     "Coordinates are incomplete; adjacent geographic transitions cannot be checked.",
                 )
                 previous_place = None
@@ -125,10 +160,12 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
                 if distance > 100:
                     transition = (
                         f"day {previous_day} to day {day.day}"
-                        if previous_day != day.day else f"day {day.day}"
+                        if previous_day != day.day
+                        else f"day {day.day}"
                     )
                     report(
-                        "warning", "distant_transition",
+                        "warning",
+                        "distant_transition",
                         f"Transition from {previous_place.id} ({transition}) is "
                         f"{distance:.1f} km in a straight line; consider geographic grouping. "
                         "This is not route distance or travel time.",
@@ -136,4 +173,6 @@ def validate_itinerary(itinerary: Itinerary | dict, repository: PlaceRepository)
             previous_place = place
             previous_day = day.day
 
-    return ValidationResult(valid=not any(issue.severity == "error" for issue in issues), issues=issues)
+    return ValidationResult(
+        valid=not any(issue.severity == "error" for issue in issues), issues=issues
+    )

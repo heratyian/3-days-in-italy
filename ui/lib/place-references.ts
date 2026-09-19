@@ -22,10 +22,15 @@ export default function placeReferences(places: Record<string, Place | undefined
           children.push(child);
           continue;
         }
-        if (child.type !== "text") { children.push(child); continue; }
+        if (child.type !== "text") {
+          children.push(child);
+          continue;
+        }
         let start = 0;
         // Accept canonical references plus observed "Name, place_123" and "Name place_123" variants.
-        for (const match of child.value.matchAll(/\s*\((place_\d+)\)|(?:[ \t]*,[ \t]*|[ \t]*)(?<![\w/])(place_\d+)\b/g)) {
+        for (const match of child.value.matchAll(
+          /\s*\((place_\d+)\)|(?:[ \t]*,[ \t]*|[ \t]*)(?<![\w/])(place_\d+)\b/g,
+        )) {
           const before = child.value.slice(start, match.index);
           if (before) children.push({ type: "text", value: before });
           const placeId = match[1] ?? match[2];
@@ -33,11 +38,19 @@ export default function placeReferences(places: Record<string, Place | undefined
           const previous = children.at(-1);
           if (interactive && place && previous) {
             const labels = [place.name];
-            if (place.type === "neighborhood" && place.neighborhood) labels.push(place.neighborhood);
+            if (place.type === "neighborhood" && place.neighborhood)
+              labels.push(place.neighborhood);
             const text = textContent(previous);
-            const label = labels.find((name) => text.endsWith(name)
-              && (text.length === name.length || /[\s([{—–]/u.test(text[text.length - name.length - 1])));
-            if (label && (previous.type === "text" || (previous.type === "element" && text === label))) {
+            const label = labels.find(
+              (name) =>
+                text.endsWith(name) &&
+                (text.length === name.length ||
+                  /[\s([{—–]/u.test(text[text.length - name.length - 1])),
+            );
+            if (
+              label &&
+              (previous.type === "text" || (previous.type === "element" && text === label))
+            ) {
               children.pop();
               let name: ElementContent = previous;
               if (previous.type === "text") {
@@ -45,8 +58,12 @@ export default function placeReferences(places: Record<string, Place | undefined
                 if (prefix) children.push({ type: "text", value: prefix });
                 name = { type: "text", value: label } satisfies Text;
               }
-              children.push({ type: "element", tagName: "button",
-                properties: { "data-place-id": placeId }, children: [name] });
+              children.push({
+                type: "element",
+                tagName: "button",
+                properties: { "data-place-id": placeId },
+                children: [name],
+              });
             }
           }
           start = match.index! + match[0].length;

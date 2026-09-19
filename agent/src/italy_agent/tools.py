@@ -10,7 +10,12 @@ from langgraph.types import Command
 from pydantic import Field, ValidationError
 
 from italy_agent.geography import calculate_distance_between_places
-from italy_agent.models import DistanceResult, Itinerary, ItineraryDay, TravelerPreferences
+from italy_agent.models import (
+    DistanceResult,
+    Itinerary,
+    ItineraryDay,
+    TravelerPreferences,
+)
 from italy_agent.repository import repository
 from italy_agent.validation import validate_itinerary as check_itinerary
 
@@ -35,10 +40,19 @@ def search_places(
     Prices run from € to €€€€; price/rating filters exclude unknown values.
     Missing values mean unknown. IDs in results can be passed to get_place.
     """
-    return [place.model_dump() for place in repository.search(
-        query=query, cities=cities, regions=regions, types=types, tags=tags,
-        max_price=max_price, min_rating=min_rating, limit=limit,
-    )]
+    return [
+        place.model_dump()
+        for place in repository.search(
+            query=query,
+            cities=cities,
+            regions=regions,
+            types=types,
+            tags=tags,
+            max_price=max_price,
+            min_rating=min_rating,
+            limit=limit,
+        )
+    ]
 
 
 @tool
@@ -67,12 +81,14 @@ def calculate_distance(origin_place_id: str, destination_place_id: str) -> dict:
     """
     try:
         distance_km = calculate_distance_between_places(
-            repository.get(origin_place_id), repository.get(destination_place_id),
+            repository.get(origin_place_id),
+            repository.get(destination_place_id),
         )
     except (KeyError, ValueError) as error:
         raise ToolException(error.args[0]) from error
     return DistanceResult(
-        origin_place_id=origin_place_id, destination_place_id=destination_place_id,
+        origin_place_id=origin_place_id,
+        destination_place_id=destination_place_id,
         distance_km=distance_km,
     ).model_dump()
 
@@ -99,9 +115,16 @@ def find_nearby_places(
     and grouping a day's stops, while respecting traveler preferences.
     """
     try:
-        return [candidate.model_dump() for candidate in repository.nearby(
-            place_id, radius_km, tags=tags, types=types, limit=limit,
-        )]
+        return [
+            candidate.model_dump()
+            for candidate in repository.nearby(
+                place_id,
+                radius_km,
+                tags=tags,
+                types=types,
+                limit=limit,
+            )
+        ]
     except (KeyError, ValueError) as error:
         raise ToolException(error.args[0]) from error
 
@@ -132,15 +155,23 @@ def update_preferences(preferences: TravelerPreferences, runtime: ToolRuntime) -
     preferences. Call once per model turn to avoid conflicting state writes.
     """
     current = TravelerPreferences.model_validate(runtime.state.get("preferences", {}))
-    updated = TravelerPreferences.model_validate({
-        **current.model_dump(), **preferences.model_dump(exclude_unset=True),
-    })
-    return Command(update={
-        "preferences": updated,
-        "messages": [ToolMessage(
-            content=updated.model_dump_json(), tool_call_id=runtime.tool_call_id,
-        )],
-    })
+    updated = TravelerPreferences.model_validate(
+        {
+            **current.model_dump(),
+            **preferences.model_dump(exclude_unset=True),
+        }
+    )
+    return Command(
+        update={
+            "preferences": updated,
+            "messages": [
+                ToolMessage(
+                    content=updated.model_dump_json(),
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ],
+        }
+    )
 
 
 @tool
@@ -161,7 +192,8 @@ def save_itinerary(days: list[ItineraryDay], runtime: ToolRuntime) -> Command:
     current = runtime.state.get("itinerary")
     saved_days = (
         {day.day: day for day in Itinerary.model_validate(current).days}
-        if current is not None else {}
+        if current is not None
+        else {}
     )
     saved_days.update({day.day: day for day in days})
     try:
@@ -170,17 +202,26 @@ def save_itinerary(days: list[ItineraryDay], runtime: ToolRuntime) -> Command:
         raise ToolException(f"Itinerary was not saved: {error}") from error
     validation = check_itinerary(itinerary, repository)
     if not validation.valid:
-        raise ToolException(f"Itinerary was not saved. Correct errors and retry: {validation.model_dump_json()}")
-    return Command(update={
-        "itinerary": itinerary,
-        "validation": validation,
-        "messages": [ToolMessage(
-            content=json.dumps({
-                "itinerary": itinerary.model_dump(), "validation": validation.model_dump(),
-            }),
-            tool_call_id=runtime.tool_call_id,
-        )],
-    })
+        raise ToolException(
+            f"Itinerary was not saved. Correct errors and retry: {validation.model_dump_json()}"
+        )
+    return Command(
+        update={
+            "itinerary": itinerary,
+            "validation": validation,
+            "messages": [
+                ToolMessage(
+                    content=json.dumps(
+                        {
+                            "itinerary": itinerary.model_dump(),
+                            "validation": validation.model_dump(),
+                        }
+                    ),
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ],
+        }
+    )
 
 
 save_itinerary.handle_tool_error = True

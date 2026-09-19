@@ -9,22 +9,33 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import ValidationError
 
-from italy_agent.models import Itinerary, ItineraryDay, ItineraryStop, TravelerPreferences
+from italy_agent.models import (
+    Itinerary,
+    ItineraryDay,
+    ItineraryStop,
+    TravelerPreferences,
+)
 from italy_agent.tools import save_itinerary, update_preferences
 
 
 @pytest.fixture
 def itinerary():
-    return Itinerary(days=[
-        ItineraryDay(day=number, stops=[ItineraryStop(place_id=f"place_{number:03}")])
-        for number in range(1, 4)
-    ])
+    return Itinerary(
+        days=[
+            ItineraryDay(day=number, stops=[ItineraryStop(place_id=f"place_{number:03}")])
+            for number in range(1, 4)
+        ]
+    )
 
 
 def tool_runtime(state):
     return ToolRuntime(
-        state=state, context=None, config={}, stream_writer=lambda value: None,
-        tool_call_id="save", store=None,
+        state=state,
+        context=None,
+        config={},
+        stream_writer=lambda value: None,
+        tool_call_id="save",
+        store=None,
     )
 
 
@@ -61,11 +72,14 @@ def test_save_creates_ordered_itinerary_and_replaces_only_requested_day(itinerar
     assert result.update["validation"].valid
 
 
-@pytest.mark.parametrize("days", [
-    [],
-    [ItineraryDay(day=2, stops=[]), ItineraryDay(day=2, stops=[])],
-    [ItineraryDay(day=2, stops=[ItineraryStop(place_id="invented")])],
-])
+@pytest.mark.parametrize(
+    "days",
+    [
+        [],
+        [ItineraryDay(day=2, stops=[]), ItineraryDay(day=2, stops=[])],
+        [ItineraryDay(day=2, stops=[ItineraryStop(place_id="invented")])],
+    ],
+)
 def test_bad_update_preserves_existing_itinerary(itinerary, days):
     original = itinerary.model_dump()
     with pytest.raises(ToolException):
@@ -87,21 +101,43 @@ def test_agent_persists_plan_and_preferences_across_thread_turns(monkeypatch, it
 
     monkeypatch.setattr(graph, "checkpointer", InMemorySaver())
     revised_day = ItineraryDay(day=2, title="A quieter day", stops=[])
-    responses = iter([
-        AIMessage(content="", tool_calls=[{
-            "id": "preferences", "name": "update_preferences",
-            "args": {"preferences": {"interests": ["food", "wine"], "pace": "relaxed"}},
-        }]),
-        AIMessage(content="", tool_calls=[{
-            "id": "plan", "name": "save_itinerary", "args": itinerary.model_dump(),
-        }]),
-        AIMessage(content="Your three-day plan is saved."),
-        AIMessage(content="", tool_calls=[{
-            "id": "revision", "name": "save_itinerary", "args": {"days": [revised_day.model_dump()]},
-        }]),
-        AIMessage(content="Day two is quieter."),
-        AIMessage(content="What would you like to do in Italy?"),
-    ])
+    responses = iter(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "preferences",
+                        "name": "update_preferences",
+                        "args": {"preferences": {"interests": ["food", "wine"], "pace": "relaxed"}},
+                    }
+                ],
+            ),
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "plan",
+                        "name": "save_itinerary",
+                        "args": itinerary.model_dump(),
+                    }
+                ],
+            ),
+            AIMessage(content="Your three-day plan is saved."),
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "revision",
+                        "name": "save_itinerary",
+                        "args": {"days": [revised_day.model_dump()]},
+                    }
+                ],
+            ),
+            AIMessage(content="Day two is quieter."),
+            AIMessage(content="What would you like to do in Italy?"),
+        ]
+    )
     prompts = []
 
     def generate(self, messages, **kwargs):
@@ -110,29 +146,53 @@ def test_agent_persists_plan_and_preferences_across_thread_turns(monkeypatch, it
 
     monkeypatch.setattr(ChatOpenAI, "_generate", generate)
     config = {"configurable": {"thread_id": "trip"}}
-    initial = graph.invoke({"messages": [{
-        "role": "user", "content": "Plan a relaxed three-day food and wine trip.",
-    }]}, config)
+    initial = graph.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Plan a relaxed three-day food and wine trip.",
+                }
+            ]
+        },
+        config,
+    )
     assert Itinerary.model_validate(initial["itinerary"]) == itinerary
     assert '"pace":"relaxed"' in prompts[1]
     assert '"place_id":"place_001"' in prompts[2]
-    updated = graph.invoke({"messages": [{
-        "role": "user", "content": "Make day two quieter.",
-    }]}, config)
+    updated = graph.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Make day two quieter.",
+                }
+            ]
+        },
+        config,
+    )
     assert Itinerary.model_validate(updated["itinerary"]).days == [
-        itinerary.days[0], revised_day, itinerary.days[2],
+        itinerary.days[0],
+        revised_day,
+        itinerary.days[2],
     ]
     assert TravelerPreferences.model_validate(updated["preferences"]) == TravelerPreferences(
-        interests=["food", "wine"], pace="relaxed",
+        interests=["food", "wine"],
+        pace="relaxed",
     )
     assert '"place_id":"place_001"' in prompts[3]
     assert "A quieter day" in prompts[4]
     assert len(updated["messages"]) > len(initial["messages"])
     saved = graph.get_state(config).values
-    assert Itinerary.model_validate(saved["itinerary"]) == Itinerary.model_validate(updated["itinerary"])
+    assert Itinerary.model_validate(saved["itinerary"]) == Itinerary.model_validate(
+        updated["itinerary"]
+    )
 
-    other = graph.invoke({"messages": [{"role": "user", "content": "Hello"}]}, {
-        "configurable": {"thread_id": "other-trip"},
-    })
+    other = graph.invoke(
+        {"messages": [{"role": "user", "content": "Hello"}]},
+        {
+            "configurable": {"thread_id": "other-trip"},
+        },
+    )
     assert other["itinerary"] is None
     assert TravelerPreferences.model_validate(other["preferences"]) == TravelerPreferences()
