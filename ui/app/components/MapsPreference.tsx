@@ -20,8 +20,8 @@ export function useMapsPreference() { return useContext(MapsContext); }
 export function MapsProviderSelect() {
   const { provider, setProvider } = useMapsPreference();
   const id = useId();
-  return <div className="d-flex align-items-center gap-2">
-    <label className="small text-body-secondary visually-hidden" htmlFor={id}>Maps</label>
+  return <div className="mb-3">
+    <label className="small text-body-secondary form-label" htmlFor={id}>Map Provider</label>
     <select id={id} className="form-select form-select-sm maps-provider" value={provider}
       onChange={(event) => setProvider(event.target.value === "apple" ? "apple" : "google")}>
       <option value="apple">Apple Maps</option>

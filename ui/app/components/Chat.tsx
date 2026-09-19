@@ -9,7 +9,8 @@ import PlaceDetails from "./PlaceDetails";
 import { usePlaces } from "@/lib/use-places";
 import type { Itinerary } from "@/lib/itinerary";
 import ItineraryPanel from "./ItineraryPanel";
-import { MapsPreference, MapsProviderSelect } from "./MapsPreference";
+import { MapsPreference } from "./MapsPreference";
+import ChatMenu from "./ChatMenu";
 
 type Submission = { id: string; type: "human"; content: string };
 
@@ -139,14 +140,10 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
   return <MapsPreference><section className="chat" aria-label="Conversation">
     <div className="d-flex flex-wrap align-items-center justify-content-between py-3 gap-2">
       <div className="d-flex align-items-center gap-2">
-        <button className="btn btn-sm btn-outline-secondary" onClick={() => setItineraryOpen(!itineraryOpen)}
+        <button className="btn btn-sm btn-dark" onClick={() => setItineraryOpen(!itineraryOpen)}
           aria-haspopup="dialog" aria-expanded={itineraryOpen} aria-controls="itinerary-panel">{itineraryOpen ? "Hide itinerary" : "View itinerary"}</button>
       </div>
-      <div className="d-flex align-items-center gap-3">
-        <MapsProviderSelect />
-        <button className="btn btn-sm btn-outline-danger" onClick={newConversation} disabled={busy}>Restart</button>
-        <button className="btn btn-sm btn-link text-body-secondary" onClick={logout} disabled={busy}>Sign out</button>
-      </div>
+      <ChatMenu busy={busy} onRestart={newConversation} onSignOut={() => void logout()} />
     </div>
     <div className="messages" ref={messages} role="log" aria-label="Messages" aria-live="polite" aria-relevant="additions text" onScroll={() => {
       const element = messages.current!;
