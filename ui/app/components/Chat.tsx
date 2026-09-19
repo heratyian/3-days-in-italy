@@ -13,6 +13,13 @@ import { MapsPreference, MapsProviderSelect } from "./MapsPreference";
 
 type Submission = { id: string; type: "human"; content: string };
 
+const conversationStarters = [
+  "🏛️ Help me plan my first three days in Rome.",
+  "🍝 I'd love a three-day trip focused on Italian food and local markets.",
+  "🖼️ Plan a relaxed three-day trip with art, history, and time to wander.",
+  "🇮🇹 I have three days in Italy. Help me choose where to go.",
+];
+
 function errorText(error: unknown): string {
   const { status, name } = error as { status?: number; name?: string };
   if (status === 401) return "Your session has expired. Sign in again to continue.";
@@ -145,9 +152,18 @@ export default function Chat({ sessionId, maxMessageLength }: { sessionId: strin
       const element = messages.current!;
       followNewest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
     }}>
-      {!visible.length && !busy && <div className="py-5 text-center text-body-secondary">
+      {!visible.length && !busy && <div className="py-5 px-3 text-center text-body-secondary">
         <h2 className="h5 text-body">Where would you like to begin?</h2>
-        <p>Send a message to start your conversation.</p>
+        <p>Choose an idea below, or tell me what you have in mind.</p>
+        <div className="list-group list-group-flush text-start">
+          {conversationStarters.map((prompt) => <div className="col" key={prompt}>
+            <button type="button" className="list-group-item w-100 h-100 text-start p-3"
+              disabled={authExpired || prompt.length > maxMessageLength}
+              onClick={() => void send({ id: crypto.randomUUID(), type: "human", content: prompt })}>
+              {prompt}
+            </button>
+          </div>)}
+        </div>
       </div>}
       {visible.map((message, index) => <Message key={message!.id ?? index} human={message!.type === "human"} content={message!.content} onSelectPlace={setSelectedPlaceId} places={placeData.places} />)}
       {busy && <p className="small text-body-secondary px-3" role="status">{stream.isThreadLoading ? "Loading conversation…" : "Responding…"}</p>}
