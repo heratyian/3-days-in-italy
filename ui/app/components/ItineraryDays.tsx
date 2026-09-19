@@ -35,7 +35,7 @@ export default function ItineraryDays({ itinerary, places, onSelectPlace = () =>
         {!pending && stops.length >= 2 && <div className="itinerary-day-maps">
           {stops.length < day.stops.length && <p className="small text-body-secondary mb-1">Unavailable stops are omitted from this route.</p>}
           {!parts.length && <p className="small">This route is too long to link. Open each stop in Maps from its place details.</p>}
-          {parts.map((part, index) => <div key={index} className="mt-2">
+          {parts.map((part, index) => <div key={index} className="my-3">
             {parts.length > 1 && <p className="small text-body-secondary mb-1">{part.map((place) => place.name).join(" → ")}</p>}
             <MapsAction href={getDayRouteMapUrl(part, provider)!} context={`Day ${day.day}${parts.length > 1 ? `, part ${index + 1} of ${parts.length}` : ""}`}
               label={parts.length > 1 ? `🗺️ Open day part ${index + 1} of ${parts.length}` : "🗺️ Open day"} />
